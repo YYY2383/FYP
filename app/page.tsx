@@ -1,7 +1,6 @@
 "use client";
 import React from "react"
-import OpenAI from "openai";
-import { useState } from "react";
+
 
 
 export default function Home() {

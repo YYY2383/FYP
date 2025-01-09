@@ -65,14 +65,23 @@ input{
     margin-left: 1rem;
 }
 
-.prepTime{
+.prepTime, .cookTime, .servings{
     display: flex;
-    ;
+    gap: 2;
+    align-items: center;
+    margin: 1rem 0rem 1rem 0rem;
 }
 
-.prepTime input{
+.prepTime input, .cookTime input, .servings input{
     max-width: 50px;
     margin-left: 1rem;
     margin-right: 1rem;
-    align-self: center;
+    text-align: center;
+    display: relative-flex;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }

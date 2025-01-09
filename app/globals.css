@@ -51,14 +51,28 @@
 }
 
 input{
-    font-weight: normal;
-    font-size: 1rem;
-    padding: 0.5rem;
-    color: black;
-    border: blue 1px solid;
-    border-radius: 2rem;    
-    background-color: white;
+    max-width: 220px;
+    height: 45px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1.5px solid blue;
+    outline: none;
+    transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    box-shadow: 0px 0px 20px -18px;
 }
+
+input:hover {
+    border: 2px solid lightgrey;
+    box-shadow: 0px 0px 20px -17px;
+  }
+  
+input:active {
+    transform: scale(0.95);
+  }
+  
+input:focus {
+    border: 2px solid grey;
+  }
 
 .recipeName input{
     min-width: 50%;
@@ -67,21 +81,281 @@ input{
 
 .prepTime, .cookTime, .servings{
     display: flex;
-    gap: 2;
+    gap: 8px;
     align-items: center;
     margin: 1rem 0rem 1rem 0rem;
+    justify-content: left;
 }
 
-.prepTime input, .cookTime input, .servings input{
-    max-width: 50px;
-    margin-left: 1rem;
-    margin-right: 1rem;
-    text-align: center;
-    display: relative-flex;
+.prepTime svg, .cookTime svg, .servings svg {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0; /* Ensures SVGs don't shrink */
 }
+
+
+.prepTime input, .cookTime input, .servings input {
+    width: 50px; 
+    text-align: center;
+    margin-left: 8px;
+}
+
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+.ingHead, .stepHead{
+    font-size: larger;
+    color: blue;
+    margin-top: 2rem;
+}
+
+.ing_list, .step_list{
+    display: block;
+    margin: 1rem 0rem 1rem 0rem;
+}
+
+table{
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+table, th, tr, td{
+    border: 1px black solid;   
+}
+
+th, td{
+    padding: 0.5rem;
+}
+
+
+.quantity, .unit, .stepNo, .stepDesc{
+    text-align: center;
+}
+
+.quantity, .qh, .unit, .uh, .stepH, .stepDH{
+    overflow: hidden;
+}
+
+.qh, .uh, .dh, .stepH, .stepD{
+    width: 1%;
+    white-space: nowrap;
+}
+
+.deleteIng, .deleteStep{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    padding: 0.5rem;
+}
+
+.ih, .stepDH{
+    border-right: none;
+}
+
+.dh,.stepD{
+    border: none;
+}
+
+.quantity input, .stepNo input{
+    text-align: center;
+    max-width: 50px;
+}
+.ing input, .stepDesc input{
+    min-width: 100%;
+}
+ 
+.deleteButton {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background-color: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .deleteButton svg {
+    width: 44%;
+  }
+  .deleteButton:hover {
+    background-color: rgb(237, 56, 56);
+    overflow: visible;
+  }
+  .bin path {
+    transition: all 0.2s;
+  }
+  .deleteButton:hover .bin path {
+    fill: #fff;
+  }
+  .deleteButton:active {
+    transform: scale(0.98);
+  }
+  .tooltip {
+    --tooltip-color: rgb(41, 41, 41);
+    position: absolute;
+    top: -40px;
+    background-color: var(--tooltip-color);
+    color: white;
+    border-radius: 5px;
+    font-size: 12px;
+    padding: 8px 12px;
+    font-weight: 600;
+    box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.105);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.5s;
+  }
+  .tooltip::before {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    transform: rotate(45deg);
+    content: "";
+    background-color: var(--tooltip-color);
+    bottom: -10%;
+  }
+  .deleteButton:hover .tooltip {
+    opacity: 1;
+  }
+  
+
+.addRow{
+    --main-focus: #2d8cf0;
+  --font-color: white;
+  --bg-color-sub: blue;
+  --bg-color: blue;
+  --main-color: #dedede;
+  position: relative;
+  width: 200px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border: 2px solid var(--main-color);
+  box-shadow: 4px 4px var(--main-color);
+  background-color: var(--bg-color);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.addRow, .button__icon, .button__text {
+    transition: all 0.3s;
+  }
+  
+.addRow .button__text {
+    transform: translateX(25px);
+    color: var(--font-color);
+    font-weight: 600;
+  }
+  
+.addRow .button__icon {
+    position: absolute;
+    transform: translateX(150px);
+    height: 100%;
+    width: 39px;
+    background-color: var(--bg-color-sub);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+.addRow .svg {
+    width: 20px;
+    stroke: var(--main-color);
+  }
+  
+.addRow:hover {
+    background: var(--bg-color);
+  }
+  
+.addRow:hover .button__text {
+    color: transparent;
+  }
+  
+.addRow:hover .button__icon {
+    width: 148px;
+    transform: translateX(25);
+  }
+  
+.addRow:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0px 0px var(--main-color);
+  }
+
+  .addStep{
+    --main-focus: #2d8cf0;
+  --font-color: white;
+  --bg-color-sub: blue;
+  --bg-color: blue;
+  --main-color: #dedede;
+  position: relative;
+  width: 150px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border: 2px solid var(--main-color);
+  box-shadow: 4px 4px var(--main-color);
+  background-color: var(--bg-color);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.addStep, .button__icon, .button__text {
+    transition: all 0.3s;
+  }
+  
+.addStep .button__text {
+    transform: translateX(25px);
+    color: var(--font-color);
+    font-weight: 600;
+  }
+  
+.addStep .button__icon {
+    position: absolute;
+    transform: translateX(100px);
+    height: 100%;
+    width: 39px;
+    background-color: var(--bg-color-sub);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+.addStep .svg {
+    width: 20px;
+    stroke: var(--main-color);
+  }
+  
+.addStep:hover {
+    background: var(--bg-color);
+  }
+  
+.addStep:hover .button__text {
+    color: transparent;
+  }
+  
+.addStep:hover .button__icon {
+    width: 148px;
+    transform: translateX(0);
+  }
+  
+.addStep:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0px 0px var(--main-color);
+  }

@@ -2,8 +2,8 @@
     
 import React, {useState} from "react"
 import Navbar from "../../components/navbar"
-import {db} from '../firebaseConfig'
-import {collection, addDoc} from 'firebase/firestore'
+// import {db} from '../firebaseConfig'
+// import {collection, addDoc} from 'firebase/firestore'
 
     export default function Home() {
         const [ingredients, setIngredients] = useState([

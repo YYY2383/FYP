@@ -1,4 +1,6 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import React, {useEffect, useState} from "react"
 import Navbar from "../components/navbar"
 import {db} from './firebaseConfig'

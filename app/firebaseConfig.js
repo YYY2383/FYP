@@ -4,13 +4,13 @@ import { initializeApp } from "firebase/app";
 import {getFirestore} from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaYHcDajcW4AQV6myBT1ewHQgkd7t4-AA",
-  authDomain: "recipecompiler-b4777.firebaseapp.com",
-  projectId: "recipecompiler-b4777",
-  storageBucket: "recipecompiler-b4777.firebasestorage.app",
-  messagingSenderId: "844964250213",
-  appId: "1:844964250213:web:99e0e0aaf78818c32f3c8c",
-  measurementId: "G-V9K0M2Z3MP"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase

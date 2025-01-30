@@ -2,59 +2,118 @@
     
 import React, {useState} from "react"
 import Navbar from "../../components/navbar"
-// import {db} from '../firebaseConfig'
-// import {collection, addDoc} from 'firebase/firestore'
+import {db} from '../firebaseConfig'
+import {collection, addDoc} from 'firebase/firestore'
+import { useRouter } from "next/navigation"
 
     export default function Home() {
-        const [ingredients, setIngredients] = useState([
-            { quantity: "", unit: "millilitre", ingredient: "" }
-        ]);
-    
-        const addRow = () => {
-            setIngredients([...ingredients, { quantity: "", unit: "millilitre", ingredient: "" }]);
+        const router = useRouter();
+
+        const [recipe, setRecipe] = useState({
+            name: '',
+            prepTime: '',
+            cookTime: '',
+            servings: '',
+            ingredients: [{ quantity: "", unit: "millilitre", ingredient: "" }],
+            steps: [{ stepNo: "1", stepDesc: "" }],
+          });
+          
+          const [loading, setLoading] = useState(false);
+
+  // Generic Input Handler
+        const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const { name, value } = e.target;
+            setRecipe((prev) => ({ ...prev, [name]: value }));
         };
-    
-        const deleteRow = (index: number) => {
-            setIngredients(ingredients.filter((_, i) => i !== index));
-        };
-    
-        const handleInputChange = (
+
+  // Handler for Ingredients & Steps
+        const handleArrayChange = (
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-            index: number
+            index: number,
+            type: "ingredients" | "steps"
         ) => {
             const { name, value } = e.target;
-            const updatedIngredients = [...ingredients];
-            updatedIngredients[index] = { ...updatedIngredients[index], [name]: value };
-            setIngredients(updatedIngredients);
-        };
+            setRecipe((prev) => {
+            const updatedArray = [...prev[type]];
+            updatedArray[index] = { ...updatedArray[index], [name]: value };
+            return { ...prev, [type]: updatedArray };
+        });
+    };
 
-        const [steps, setSteps] = useState([{ stepNo: "", stepDesc: "" }]);
-
-        const addStep = () => {
-            setSteps([
-                ...steps,
-                { stepNo: (steps.length + 1).toString(), stepDesc: "" },
-            ]);
-        };
-
-        const deleteStep = (index: number) => {
-            const updatedSteps = steps.filter((_, i) => i !== index);
-            // Reassign step numbers after deletion
-            const reindexedSteps = updatedSteps.map((step, i) => ({
-                ...step,
-                stepNo: (i + 1).toString(), // Reindex steps starting from 1
+  // Adding a new ingredient or step
+        const addArrayField = (type: "ingredients" | "steps") => {
+            setRecipe((prev) => ({
+                ...prev,
+                [type]: [
+                    ...prev[type],
+                    type === "ingredients"
+                        ? { quantity: "", unit: "millilitre", ingredient: "" }
+                        : { stepNo: (prev.steps.length + 1).toString(), stepDesc: "" },
+                ],
             }));
-            setSteps(reindexedSteps);
         };
 
-        const handleStepChange = (
-            e: React.ChangeEvent<HTMLInputElement>,
-            index: number
-        ) => {
+
+                // Removing an ingredient or step
+        const removeArrayField = (index: number, type: "ingredients" | "steps") => {
+            setRecipe((prev) => {
+                const updatedArray = prev[type].filter((_, i) => i !== index);
+                // Re-number steps properly after deletion
+                const reindexedArray =
+                    type === "steps"
+                        ? updatedArray.map((step, i) => ({
+                            ...step,
+                            stepNo: (i + 1).toString(),
+                        }))
+                        : updatedArray;
+                return { ...prev, [type]: reindexedArray };
+            });
+        };  
+                
+// Submit Recipe to Firebase
+        const handleSubmit = async (e: React.FormEvent) => {
+            e.preventDefault();
+            setLoading(true);
+            try {
+            await addDoc(collection(db, "recipes"), recipe);
+            alert("Recipe added successfully!");
+            setRecipe({
+                name: "",
+                prepTime: "",
+                cookTime: "",
+                servings: "",
+                ingredients: [{ quantity: "", unit: "millilitre", ingredient: "" }],
+                steps: [{ stepNo: "1", stepDesc: "" }],
+            });
+            setLoading(false);
+        // Delay the redirection to ensure it happens after the component renders
+            setTimeout(() => {
+                router.push("/"); // Navigate to home page after 300ms
+            }, 300);
+            } catch (error) {
+            console.error("Error adding recipe:", error);
+            }
+            setLoading(false);
+        };      
+        
+        const handleStepChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
             const { name, value } = e.target;
-            const updatedSteps = [...steps];
-            updatedSteps[index] = { ...updatedSteps[index], [name]: value };
-            setSteps(updatedSteps);
+            setRecipe((prev) => {
+                const updatedSteps = [...prev.steps];
+                updatedSteps[index] = { ...updatedSteps[index], [name]: value };
+                return { ...prev, steps: updatedSteps };
+            });
+        };
+        
+        const deleteStep = (index: number) => {
+            setRecipe((prev) => {
+                const updatedSteps = prev.steps.filter((_, i) => i !== index);
+                const reindexedSteps = updatedSteps.map((step, i) => ({
+                    ...step,
+                    stepNo: (i + 1).toString(),
+                }));
+                return { ...prev, steps: reindexedSteps };
+            });
         };
 
 
@@ -78,7 +137,7 @@ import Navbar from "../../components/navbar"
                             {/* Location to insert recipe name */}
                             <div className="recipeName">
                                 <label>Recipe Name:</label>
-                                <input type="text" id="recipeName" name="recipeName" />
+                                <input type="text" id="recipeName" name="name" value={recipe.name} onChange={handleChange} />
                             </div>
 
                             {/* Location to add prep time, cooking time, and no. of servings */}
@@ -88,7 +147,7 @@ import Navbar from "../../components/navbar"
                                 </svg>
                                 <b>Prep Time: </b>
                                 <div>
-                                    <input type="number" placeholder="0" id="prepTime" name="prepTime" />
+                                    <input type="number" placeholder="0" id="prepTime" name="prepTime" value={recipe.prepTime} onChange={handleChange}/>
                                 </div>
                                 <p>minutes</p>
                             </div>
@@ -96,7 +155,7 @@ import Navbar from "../../components/navbar"
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h20"></path><path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"></path><path d="m4 8 16-4"></path><path d="m8.86 6.78-.45-1.81a2 2 0 0 1 1.45-2.43l1.94-.48a2 2 0 0 1 2.43 1.46l.45 1.8"></path></svg>
                                 <b>Cook Time: </b>
                                 <div>
-                                    <input type="number" placeholder="0" id="cookTime" name="cookTime" />
+                                    <input type="number" placeholder="0" id="cookTime" name="cookTime" value={recipe.cookTime} onChange={handleChange} />
                                 </div>
                                 <p>minutes</p>    
                             </div>
@@ -106,7 +165,7 @@ import Navbar from "../../components/navbar"
                                 </svg>
                                 <b>Servings: </b>
                                 <div>
-                                    <input type="number" placeholder="0" id="servings" name="servings" />
+                                    <input type="number" placeholder="0" id="servings" name="servings" value={recipe.servings} onChange={handleChange}/>
                                 </div>
                                 <p>servings</p>
                             </div>  
@@ -116,7 +175,7 @@ import Navbar from "../../components/navbar"
                             <div className="ingredients">
                                 <b className="ingHead">Ingredients</b>
                                 <div className="ing_list">
-                                    <table>
+                                    <table className="ingTable">
                                         <thead>
                                             <tr>
                                                 <th className="qh">Quantity</th>
@@ -126,22 +185,21 @@ import Navbar from "../../components/navbar"
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {ingredients.map((ingredient, index) => (
+                                            {recipe.ingredients.map((ingredient, index) => (
                                                 <tr key={index}>
                                                     <td className="quantity">
                                                         <input
                                                             type="number"
                                                             name="quantity"
                                                             value={ingredient.quantity}
-                                                            placeholder="0"
-                                                            onChange={(e) => handleInputChange(e, index)}
+                                                            onChange={(e) => handleArrayChange(e, index, "ingredients")}
                                                         />
                                                     </td>
                                                     <td className="unit">
                                                         <select
                                                             name="unit"
                                                             value={ingredient.unit}
-                                                            onChange={(e) => handleInputChange(e, index)}
+                                                            onChange={(e) => handleArrayChange(e, index, "ingredients")}
                                                         >
                                                             <option value="millilitre">Millilitre</option>
                                                             <option value="litre">Litre</option>
@@ -155,17 +213,16 @@ import Navbar from "../../components/navbar"
                                                     </td>
                                                     <td className="ing">
                                                         <input
-                                                            type="text"
-                                                            name="ingredient"
-                                                            value={ingredient.ingredient}
-                                                            placeholder="Insert here"
-                                                            onChange={(e) => handleInputChange(e, index)}
+                                                        type="text"
+                                                        name="ingredient"
+                                                        value={ingredient.ingredient}
+                                                        onChange={(e) => handleArrayChange(e, index, "ingredients")}
                                                         />
                                                     </td>
                                                     <td className="deleteIng">
                                                         <button
                                                             className="deleteButton"
-                                                            onClick={() => deleteRow(index)}
+                                                            onClick={() => removeArrayField(index, "ingredients")}
                                                         >
                                                             <svg
                                                                 xmlns="http://www.w3.org/2000/svg"
@@ -197,7 +254,7 @@ import Navbar from "../../components/navbar"
                                     </table>
 
                                     {/* button to add rows to the table */}
-                                    <button type="button" className="addRow" onClick={addRow}>
+                                    <button type="button" className="addRow" onClick={() => addArrayField("ingredients")}>
                                         <span className="button__text">Add Ingredient</span>
                                         <span className="button__icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" stroke="currentColor" height="24" fill="none" className="svg"><line y2="19" y1="5" x2="12" x1="12"></line><line y2="12" y1="12" x2="19" x1="5"></line></svg></span>
                                     </button>
@@ -210,7 +267,7 @@ import Navbar from "../../components/navbar"
                         <div className="steps">
                             <b className="stepHead">Steps</b>
                             <div className="step_list">
-                                <table>
+                                <table className="stepTable">
                                     <thead>
                                         <tr>
                                             <th className="stepH">Step</th>
@@ -219,20 +276,24 @@ import Navbar from "../../components/navbar"
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {steps.map((step, index) => (
-                                            <tr key={index}>
-                                                <td className="stepNo">
-                                                <span>{index + 1}</span>
-                                                </td>
-                                                <td className="stepDesc">
-                                                    <input
-                                                        type="text"
-                                                        name="stepDesc"
-                                                        value={step.stepDesc}
-                                                        placeholder="Insert here"
-                                                        onChange={(e) => handleStepChange(e, index)}
-                                                    />
-                                                </td>
+                                    {recipe.steps.map((step, index) => (
+                                                <tr key={index}>
+                                                    <td className="stepNo">
+                                                        <input
+                                                            type="number"
+                                                            name="stepNo"
+                                                            value={step.stepNo}
+                                                            onChange={(e) => handleStepChange(e, index)}
+                                                        />
+                                                    </td>
+                                                    <td className="stepDesc">
+                                                        <input
+                                                            type="text"
+                                                            name="stepDesc"
+                                                            value={step.stepDesc}
+                                                            onChange={(e) => handleStepChange(e, index)}
+                                                        />
+                                                    </td>
                                                 <td className="deleteStep">
                                                     <button
                                                         className="deleteButton"
@@ -267,7 +328,7 @@ import Navbar from "../../components/navbar"
                                     </tbody>
                                 </table>
 
-                                <button type="button" className="addStep" onClick={addStep}>
+                                <button type="button" className="addStep" onClick={() => addArrayField("steps")}>
                                     <span className="button__text">Add Step</span>
                                     <span className="button__icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" stroke="currentColor" height="24" fill="none" className="svg">
@@ -279,7 +340,13 @@ import Navbar from "../../components/navbar"
                             </div>
                         </div>
 
-                    </div>
+                        {/* Submit Button */}
+                        <div className="submitRecipe">
+                                <button className="submit" onClick={handleSubmit} disabled={loading}>
+                                    {loading ? "Submitting..." : "Submit Recipe"}
+                                </button>
+                            </div>
+                        </div>
                 </div>
             </div>
         </main>

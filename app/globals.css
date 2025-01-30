@@ -1,6 +1,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.main{
+  margin: 2rem;
+}
+
 .appName {
     font-size: 2rem;
     font-weight: bold;

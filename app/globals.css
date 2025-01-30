@@ -10,7 +10,6 @@
 .navbar {
     background-color: white;
     margin: 1rem 0rem 1rem 0rem;
-    min-width: none;
 }
   
 .navbar ul {
@@ -20,6 +19,7 @@
     padding: 0;
     border: black 2px solid;
     padding-left: 1rem;
+    max-width: 90%;
 }
 
 .navbar li {

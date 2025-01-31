@@ -282,8 +282,8 @@ import { useRouter } from "next/navigation"
                                                         <input
                                                             type="number"
                                                             name="stepNo"
-                                                            value={step.stepNo}
-                                                            onChange={(e) => handleStepChange(e, index)}
+                                                            value={index + 1}
+                                                            readOnly
                                                         />
                                                     </td>
                                                     <td className="stepDesc">

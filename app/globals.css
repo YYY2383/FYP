@@ -11,6 +11,8 @@
     margin: 1rem 0rem 1rem 0rem;
 }
 
+/* ----------------------------------------------------------------------------------------- */
+
 .navbar {
     background-color: white;
     margin: 1rem 0rem 1rem 0rem;
@@ -41,11 +43,13 @@
     text-decoration: underline black 2px; 
 }
 
+/*-----------------------------------------------------------------------------------  */
 
 .details{
     display:block;
     margin: 1rem 0rem 1rem 0rem;
 }
+
 
 .recipeName{
     font-size: 1.5rem;
@@ -117,7 +121,7 @@ input::-webkit-inner-spin-button {
     margin-top: 2rem;
 }
 
-.ing_list, .step_list{
+.ing_list, .step_list, .IngList{
     display: block;
     margin: 1rem 0rem 1rem 0rem;
 }
@@ -393,6 +397,9 @@ th, td{
   color: blue;
 }
 
+/* -------------------------------------------------------------------------------------------------------- */
+
+
 /* display recipe */
 .recipe{
   display: flex;
@@ -405,7 +412,7 @@ th, td{
   width: 100%;
 }
 
-.recipeList, .recList {
+.recipeList {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
@@ -427,9 +434,23 @@ th, td{
   margin-bottom: 2rem;
 }
 
+.recipeBox:hover{
+  background-color: blue;
+  color: white;
+}
+
+.recipeBox:hover .rName{
+  color: white;
+}
+
 .rList{
   list-style-type: none;
   padding: 0;
+}
+
+.rList li{
+  display: inline-block;
+  margin-right: 2rem;
 }
 
 .rName{
@@ -439,22 +460,6 @@ th, td{
     margin: 0rem 0rem 1rem 0rem;
 }
 
-.ing, .step{
-  margin-top: 2rem;
-  font-weight: bold;
-  font-size: 16px;
-  margin-bottom: 0.5rem;
-}
-
-.recipe .ing ul, .recipe .step ul {
-  list-style: disc; 
-  padding-left: 20px; 
-}
-
-.ing ul li, .step ul li {
-  margin-bottom: 8px; 
-}
-
 .stepShow{
   list-style-type: none;
   padding: 0;
@@ -462,5 +467,39 @@ th, td{
 
 .stepShow li{
   padding-bottom: 0.5rem;
+}
+
+/* ----------------------------------------------------------------------------------------- */
+
+.showName{
+  font-size:3rem;
+  font-weight: bold;
+  color: blue;
+  margin: 1rem 0rem 1rem 0rem;
+}
+
+.show_prepTime, .show_cookTime, .show_servings{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: left;
+}
+
+.showIhead, .showShead{
+  color: blue;
+  font-weight: bold;
+  font-size: 22px;
+}
+
+.showQuantity, .showUnit, .showIng, .showNo, .showDesc{
+  font-size: 20px;
+  padding: 1rem;
+  text-align: center;
+  color: blue;
+}
+
+.pTime, .cTime, .serv{
+  color: blue;
+  font-size: 20px;
 }
 

@@ -5,9 +5,12 @@ import React, {useEffect, useState} from "react"
 import Navbar from "../components/navbar"
 import {db} from './firebaseConfig'
 import {collection, getDocs} from 'firebase/firestore'
+import { useRouter } from "next/navigation";
 
 
 export default function Home() {
+  const router = useRouter(); 
+
    // State to store recipes
    const [recipes, setRecipes] = useState<any[]>([]);
 
@@ -40,7 +43,7 @@ export default function Home() {
           </div>
 
           <div className = 'head'>
-            <h2>This is the HOME PAGE!!!!! aksjdajsjdklajdkajlksdjalkdjakljsdlks</h2>
+            <h2>This is the HOME PAGE!!!!!</h2>
           </div>
 
           {/* places to display recipes */}
@@ -51,31 +54,11 @@ export default function Home() {
                 <div className="recList">
                   <ul className="rList">
                     {recipes.map((recipe) => (
-                      <li key={recipe.id} className="recipeBox">
+                      <li key={recipe.id} className="recipeBox" onClick={() => router.push(`/recipe_view/${recipe.id}`)}>
                         <h4 className="rName">{recipe.name}</h4>
-                        <p className="pTime">Prep time: {recipe.prepTime}</p>
-                        <p className="cTime">Cook time: {recipe.cookTime}</p>
-                        <p className="serve">Servings: {recipe.servings}</p>
-
-                        
-                        <h5 className="ing">Ingredients:</h5>
-                        <ul>
-                          {recipe.ingredients.map((ingredient: any, index: number) => (
-                            <li key={index}>
-                              {ingredient.quantity} {ingredient.unit} of {ingredient.ingredient}
-                            </li>
-                          ))}
-                        </ul>
-
-                       
-                        <h5 className="step">Steps:</h5>
-                        <ol className="stepShow">
-                          {recipe.steps.map((step: any, index: number) => (
-                            <li key={index}>
-                              Step {step.stepNo}: {step.stepDesc}
-                            </li>
-                          ))}
-                        </ol>
+                        <p><strong>Prep time: </strong> {recipe.prepTime}</p>
+                        <p><strong>Cook time: </strong>{recipe.cookTime}</p>
+                        <p><strong>Servings: </strong>{recipe.servings}</p>
                       </li>
                     ))}
                   </ul>

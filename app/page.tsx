@@ -56,9 +56,9 @@ export default function Home() {
                     {recipes.map((recipe) => (
                       <li key={recipe.id} className="recipeBox" onClick={() => router.push(`/recipe_view/${recipe.id}`)}>
                         <h4 className="rName">{recipe.name}</h4>
-                        <p><strong>Prep time: </strong> {recipe.prepTime}</p>
-                        <p><strong>Cook time: </strong>{recipe.cookTime}</p>
-                        <p><strong>Servings: </strong>{recipe.servings}</p>
+                        <p><strong>Prep time: </strong> {recipe.prepTime} <strong> minute</strong></p>
+                        <p><strong>Cook time: </strong>{recipe.cookTime} <strong> minute</strong></p>
+                        <p><strong>Servings: </strong>{recipe.servings} <strong> servings</strong></p>
                       </li>
                     ))}
                   </ul>

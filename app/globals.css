@@ -30,7 +30,7 @@
 
 .navbar li {
     margin-right: 1.5rem;
-    padding-right: 1.5rem;
+    padding: 0.75rem 1.5rem 0.75rem 0rem;
     border-right: black 2px solid;
 } 
 

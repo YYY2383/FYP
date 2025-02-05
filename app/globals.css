@@ -51,7 +51,7 @@
 }
 
 
-.recipeName{
+.recipeName, .linkName{
     font-size: 1.5rem;
     font-weight: bold;
     color: blue;
@@ -244,18 +244,26 @@ th, td{
   }
   
 
-.addRow{
+.addRow, .addStep{
+  display: flex;
+  align-items: center;
+}
+
+.linkButton{
+  display: inline-flex;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.addRow, .addStep, .linkButton {
     --main-focus: #2d8cf0;
   --font-color: white;
   --bg-color-sub: blue;
   --bg-color: blue;
   --main-color: #dedede;
   position: relative;
-  width: 200px;
   height: 40px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
   border: 2px solid var(--main-color);
   box-shadow: 4px 4px var(--main-color);
   background-color: var(--bg-color);
@@ -264,11 +272,25 @@ th, td{
   margin-top: 1rem;
 }
 
-.addRow, .button__icon, .button__text {
+
+
+.addRow{
+  width: 200px;
+}
+
+.addStep{
+  width: 150px;
+}
+
+.linkButton{
+  width: 150px;
+}
+
+.addRow .button__icon, .button__text {
     transition: all 0.3s;
   }
   
-.addRow .button__text {
+.addRow .button__text, .addStep .button__text, .linkButton .button__text {
     transform: translateX(25px);
     color: var(--font-color);
     font-weight: 600;
@@ -284,60 +306,18 @@ th, td{
     align-items: center;
     justify-content: center;
   }
-  
-.addRow .svg {
-    width: 20px;
-    stroke: var(--main-color);
-  }
-  
-.addRow:hover {
-    background: var(--bg-color);
-  }
-  
-.addRow:hover .button__text {
-    color: transparent;
-  }
-  
-.addRow:hover .button__icon {
-    width: 148px;
-    transform: translateX(25);
-  }
-  
-.addRow:active {
-    transform: translate(3px, 3px);
-    box-shadow: 0px 0px var(--main-color);
+
+.linkButton .button__icon {
+    position: absolute;
+    transform: translateX(90px);
+    height: 100%;
+    width: 39px;
+    background-color: var(--bg-color-sub);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .addStep{
-    --main-focus: #2d8cf0;
-  --font-color: white;
-  --bg-color-sub: blue;
-  --bg-color: blue;
-  --main-color: #dedede;
-  position: relative;
-  width: 150px;
-  height: 40px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  border: 2px solid var(--main-color);
-  box-shadow: 4px 4px var(--main-color);
-  background-color: var(--bg-color);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 1rem;
-}
-
-.addStep, .button__icon, .button__text {
-    transition: all 0.3s;
-  }
-  
-.addStep .button__text {
-    transform: translateX(25px);
-    color: var(--font-color);
-    font-weight: 600;
-  }
-  
 .addStep .button__icon {
     position: absolute;
     transform: translateX(100px);
@@ -349,28 +329,44 @@ th, td{
     justify-content: center;
   }
   
-.addStep .svg {
+.addRow .svg, .addStep .svg, .linkButton .svg {
     width: 20px;
     stroke: var(--main-color);
   }
   
-.addStep:hover {
+.addRow:hover , .addStep:hover, .linkButton:hover {
     background: var(--bg-color);
   }
   
-.addStep:hover .button__text {
+.addRow:hover .button__text , .addStep:hover .button__text, .linkButton:hover .button__text {
     color: transparent;
   }
   
-.addStep:hover .button__icon {
+.addRow:hover .button__icon {
     width: 148px;
-    transform: translateX(0);
+    transform: translateX(20);
   }
   
-.addStep:active {
+  
+.linkButton:hover .button__icon, .addStep:hover .button__icon {
+    width: 148px;
+    transform: translateX(-8);
+  }
+  
+.addRow:active, .addStep:active, .linkButton:active {
     transform: translate(3px, 3px);
     box-shadow: 0px 0px var(--main-color);
   }
+
+
+.addStep, .button__icon, .button__text {
+    transition: all 0.3s;
+  }
+  
+.linkButton, .button__icon, .button__text {
+    transition: all 0.3s;
+  }
+
 
 .submit{
   --main-focus: #2d8cf0;
@@ -397,8 +393,39 @@ th, td{
   color: blue;
 }
 
+.backHome{
+  --main-focus: #2d8cf0;
+  --font-color: blue;
+  --bg-color-sub: blue;
+  --bg-color: white;
+  --main-color: #dedede;
+  position: relative;
+  width: 150px;
+  height: 40px;
+  cursor: pointer;
+  border: 2px solid var(--main-color);
+  box-shadow: 4px 4px var(--main-color);
+  background-color: var(--bg-color);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 1rem;
+  margin-left: 1rem;
+  color: var(--font-color);
+  font-weight: 600;
+}
+
+.backHome:hover {
+  background: var(--main-focus);
+  color: white;
+}
+
 /* -------------------------------------------------------------------------------------------------------- */
 
+
+.linkBox{
+  max-width: none;
+  width: 30%;
+}
 
 /* display recipe */
 .recipe{
@@ -428,7 +455,7 @@ th, td{
   border: #ddd;    
   border-radius: 20px;
   padding: 20px;
-  width: 220px;      
+  min-width: 220px;      
   box-shadow:  26px 26px 51px #9a9a9a,
   -26px -26px 51px #ffffff;
   margin-bottom: 2rem;
@@ -630,3 +657,4 @@ th, td{
   gap: 1rem;
   margin: 1rem 0rem 1rem 0rem;
 }
+

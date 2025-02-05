@@ -340,13 +340,16 @@ import { useRouter } from "next/navigation"
                             </div>
                         </div>
 
-                        {/* Submit Button */}
-                        <div className="submitRecipe">
-                                <button className="submit" onClick={handleSubmit} disabled={loading}>
-                                    {loading ? "Submitting..." : "Submit Recipe"}
-                                </button>
-                            </div>
+                        {/* Submit and Back to Home Button */}
+                        <div>
+                            <button className="submit" onClick={handleSubmit} disabled={loading}>
+                                {loading ? "Submitting..." : "Submit Recipe"}
+                            </button>                          
+                            <button className="backHome" onClick={() => router.push("/")}>
+                                Back to Home
+                            </button>
                         </div>
+                    </div>
                 </div>
             </div>
             </div>

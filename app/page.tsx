@@ -55,14 +55,14 @@ export default function Home() {
         servings: recipeData.servings,
         image: recipeData.image,
         ingredients: recipeData.extendedIngredients?.map((ing: any) => ({
-          ingredient: ing.original, // Assuming original is the ingredient name
+          ingredient: ing.name || ing.original, 
           quantity: ing.amount || 0,
           unit: ing.unit || ""
         })) || [],
         steps: recipeData.instructions
           ? recipeData.instructions
-              .split('\n') // Split the instructions by new lines
-              .filter((step: string) => step.trim() !== "") // Remove empty or blank steps
+              .split('\n')
+              .filter((step: string) => step.trim() !== "") 
               .map((step: string, index: number) => ({
                 stepNo: index + 1,
                 stepDesc: step
@@ -99,7 +99,7 @@ export default function Home() {
 
           {/* place to insert links */}
           <div className="links">
-            <h3>Links</h3>
+            <label className="linkName">Links: </label>
             <input
               type="text"
               placeholder="Insert the recipe's link here"
@@ -108,8 +108,27 @@ export default function Home() {
               onChange={(e) => setRecipeUrl(e.target.value)}
             />
             <button className="linkButton" onClick={handleAddRecipe} disabled={loading}>
-              {loading ? "Adding..." : "Add Link"}
-            </button>
+              <span className="button__text">{loading ? "Adding..." : "Add Link"}</span>
+              {!loading && (
+              <span className="button__icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="none"
+                  className="svg"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </span>
+            )}
+          </button>
             {error && <p className="text-red-500">{error}</p>}
           </div>  
 

@@ -1,13 +1,28 @@
 "use client"
     
-import React, {useState} from "react"
+import React, {useEffect, useState} from "react"
 import Navbar from "../../components/navbar"
 import {db} from '../firebaseConfig'
 import {collection, addDoc} from 'firebase/firestore'
 import { useRouter } from "next/navigation"
+import {getAuth, onAuthStateChanged, User} from 'firebase/auth'
 
     export default function Create() {
         const router = useRouter();
+        const [user, setUser] = useState<User | null>(null);
+
+        useEffect(() => {
+            const auth = getAuth();
+            const unsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    setUser(user);
+                } else {
+                    setUser(null);
+                }
+            });
+    
+            return () => unsubscribe();
+        }, []);
 
         const [recipe, setRecipe] = useState({
             name: '',
@@ -75,26 +90,33 @@ import { useRouter } from "next/navigation"
             e.preventDefault();
             setLoading(true);
             try {
-            await addDoc(collection(db, "recipes"), recipe);
-            alert("Recipe added successfully!");
-            setRecipe({
-                name: "",
-                prepTime: "",
-                cookTime: "",
-                servings: "",
-                ingredients: [{ quantity: "", unit: "millilitre", ingredient: "" }],
-                steps: [{ stepNo: "1", stepDesc: "" }],
-            });
-            setLoading(false);
-        // Delay the redirection to ensure it happens after the component renders
-            setTimeout(() => {
-                router.push("/"); // Navigate to home page after 300ms
-            }, 300);
+                if (!user) {
+                    alert("You must be logged in to submit a recipe.");
+                    setLoading(false);
+                    return;
+                }
+
+                const recipeWithUserId = { ...recipe, userId: user.uid };
+                await addDoc(collection(db, "recipes"), recipeWithUserId);
+                alert("Recipe added successfully!");
+                setRecipe({
+                    name: "",
+                    prepTime: "",
+                    cookTime: "",
+                    servings: "",
+                    ingredients: [{ quantity: "", unit: "millilitre", ingredient: "" }],
+                    steps: [{ stepNo: "1", stepDesc: "" }],
+                });
+                setLoading(false);
+                // Delay the redirection to ensure it happens after the component renders
+                setTimeout(() => {
+                    router.push("/recipes_view"); // Navigate to home page after 300ms
+                }, 300);
             } catch (error) {
-            console.error("Error adding recipe:", error);
+                console.error("Error adding recipe:", error);
+                setLoading(false);
             }
-            setLoading(false);
-        };      
+        };
         
         const handleStepChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
             const { name, value } = e.target;
@@ -345,7 +367,7 @@ import { useRouter } from "next/navigation"
                             <button className="submit" onClick={handleSubmit} disabled={loading}>
                                 {loading ? "Submitting..." : "Submit Recipe"}
                             </button>                          
-                            <button className="backHome" onClick={() => router.push("/")}>
+                            <button className="backHome" onClick={() => router.push("recipes_view")}>
                                 Back to Home
                             </button>
                         </div>

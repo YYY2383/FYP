@@ -5,11 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { db } from "../../firebaseConfig"; // Adjust path if needed
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import Navbar from "../../../components/navbar";
+import { getAuth } from "firebase/auth";
 
 export default function RecipeEdit(){
     const [loading] = useState(false);
     const { id } = useParams();
     const router = useRouter();
+    const auth = getAuth();
+    const currentUserId = auth.currentUser?.uid;    
     const [recipe, setRecipe] = useState({
       name: "",
       prepTime: "",
@@ -23,19 +26,25 @@ export default function RecipeEdit(){
         if (!id) return;
     
         const fetchRecipe = async () => {
-          try {
-            const recipeRef = doc(db, "recipes", id as string);
-            const docSnap = await getDoc(recipeRef);
-    
-            if (docSnap.exists()) {
-              setRecipe(docSnap.data() as any);
-            } else {
-              console.error("Recipe not found");
+            try {
+              const recipeRef = doc(db, "recipes", id as string);
+              const docSnap = await getDoc(recipeRef);
+          
+              if (docSnap.exists()) {
+                const recipeData = docSnap.data() as any;
+                if (recipeData.userId === currentUserId) { // Ensure userId matches
+                  setRecipe(recipeData);
+                } else {
+                  console.error("You do not have permission to edit this recipe");
+                }
+              } else {
+                console.error("Recipe not found");
+              }
+            } catch (error) {
+              console.error("Error fetching recipe:", error);
             }
-          } catch (error) {
-            console.error("Error fetching recipe:", error);
-          }
-        };
+          };
+          
     
         fetchRecipe();
       }, [id]);
@@ -73,12 +82,12 @@ export default function RecipeEdit(){
         });
     };
     
-      const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-    
+      
         try {
           const recipeRef = doc(db, "recipes", id as string);
-          await updateDoc(recipeRef, recipe);
+          await updateDoc(recipeRef, { ...recipe, userId: currentUserId }); // Include userId
           router.push(`/recipe_view/${id}`); // Redirect to updated recipe details page
         } catch (error) {
           console.error("Error updating recipe:", error);

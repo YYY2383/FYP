@@ -10,7 +10,7 @@ import { getAuth } from 'firebase/auth';
 import { fetchRecipe } from '@/utils/fetch';
 
 
-export default function recipes_view() {
+export default function RecipesView() {
   const router = useRouter(); 
 
    // State to store recipes

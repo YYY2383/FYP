@@ -19,16 +19,23 @@ export default function Home() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     setLoading(true); // Set loading state to true
+    setError(""); // Clear any previous error message
 
     try {
       // Attempt to sign in with email and password
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/recipes_view"); // Redirect to dashboard upon successful login
     } catch (err: any) {
-      // Handle sign-in errors
-      setError("Failed to sign in. Please check your credentials.");
+      // Handle sign-in errors and update error message based on Firebase error
+      if (err.code === "auth/wrong-password") {
+        setError("Incorrect password. Please try again.");
+      } else if (err.code === "auth/user-not-found") {
+        setError("No account found with this email.");
+      } else {
+        setError("Failed to sign in. Please check your credentials.");
+      }
     } finally {
       setLoading(false); // Set loading state to false after completion
     }

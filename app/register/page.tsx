@@ -4,7 +4,7 @@
 import React, {useState} from "react"
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import {db, auth} from '../firebaseConfig'
-import {collection, doc, setDoc} from 'firebase/firestore'
+import {doc, setDoc} from 'firebase/firestore'
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 

@@ -54,7 +54,9 @@ export default function RecipeDetails() {
     fetchRecipe();
   }, [params, router]);
 
-  if (!recipe) return <p>Loading recipe...</p>;
+  if (loading) return <p>Loading recipe...</p>;
+
+  if (!recipe) return <p>Recipe not found.</p>;
 
   return (
     <main className="main">

@@ -3,56 +3,60 @@
 
 import React, { useEffect, useState } from "react";
 import Navbar from "../../components/navbar";
-import { db } from './../firebaseConfig';
-import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
+import { db } from "../firebaseConfig";
+import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { getAuth } from 'firebase/auth';
-import { fetchRecipe } from '@/utils/fetch';
-
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { fetchRecipe } from "@/utils/fetch";
 
 export default function RecipesView() {
   const router = useRouter(); 
+  const auth = getAuth();
+  const [user, setUser] = useState<any>(null);
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [recipeUrl, setRecipeUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-   // State to store recipes
-   const [recipes, setRecipes] = useState<any[]>([]);
-   const [recipeUrl, setRecipeUrl] = useState("");
-   const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-   // Fetch recipes when the component mounts
-   useEffect(() => {
-    if (!user) return; // If no user is logged in, don't fetch recipes
-    
-    const fetchRecipes = async () => {
-      try {
-        const q = query(collection(db, "recipes"), where("userId", "==", user.uid));
-        const querySnapshot = await getDocs(q);
-        const recipesList: any[] = [];
-        querySnapshot.forEach((doc) => {
-          recipesList.push({ id: doc.id, ...doc.data() });
-        });
-        setRecipes(recipesList);
-      } catch (error) {
-        console.error("Error fetching recipes:", error);
+  // Listen for authentication state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (!currentUser) {
+        router.push("/login"); // Redirect if not authenticated
+        return;
       }
-    };
 
-    fetchRecipes();
-  }, [user]);
+      setUser(currentUser);
+      fetchRecipes(currentUser.uid);
+    });
 
+    return () => unsubscribe();
+  }, [auth, router]);
 
-   const handleAddRecipe = async () => {
-    if (!recipeUrl) return;
+  // Fetch recipes when user state updates
+  const fetchRecipes = async (userId: string) => {
+    try {
+      const q = query(collection(db, "recipes"), where("userId", "==", userId));
+      const querySnapshot = await getDocs(q);
+      const recipesList: any[] = [];
+      querySnapshot.forEach((doc) => {
+        recipesList.push({ id: doc.id, ...doc.data() });
+      });
+      setRecipes(recipesList);
+    } catch (error) {
+      console.error("Error fetching recipes:", error);
+    }
+  };
+
+  const handleAddRecipe = async () => {
+    if (!recipeUrl || !user) return;
     setLoading(true);
     setError(null);
     console.log("Fetching recipe for URL:", recipeUrl);
     try {
       const recipeData = await fetchRecipe(recipeUrl);
       console.log("Recipe Data:", recipeData);
-  
+
       const newRecipe = {
         name: recipeData.title,
         prepTime: recipeData.readyInMinutes,
@@ -73,12 +77,12 @@ export default function RecipesView() {
                 stepDesc: step
               }))
           : [],
-        userId: user?.uid
+        userId: user.uid
       };
-  
-      await addDoc(collection(db, "recipes"), newRecipe);
-      
-      setRecipes((prevRecipes) => [...prevRecipes, newRecipe]);
+
+      const docRef = await addDoc(collection(db, "recipes"), newRecipe);
+      const newRecipeWithId = { id: docRef.id, ...newRecipe };
+      setRecipes((prevRecipes) => [...prevRecipes, newRecipeWithId]);
       setRecipeUrl("");
     } catch (error) {
       console.error("Error adding recipe:", error);
@@ -87,24 +91,17 @@ export default function RecipesView() {
       setLoading(false);
     }
   };
-  
-  
 
   return (
     <main className='main'>
       <div className='container'>
         <h1 className="appName">Food Compiler</h1>
         
-        <div className = 'body'>
+        <div className='body'>
           <div>
             <Navbar />
           </div>
 
-          <div className = 'head'>
-            <h2>This is the HOME PAGE!!!!!</h2>
-          </div>
-
-          {/* place to insert links */}
           <div className="links">
             <label className="linkName">Links: </label>
             <input
@@ -139,15 +136,17 @@ export default function RecipesView() {
             {error && <p className="text-red-500">{error}</p>}
           </div>  
 
-          {/* places to display recipes */}
           <h3 className="recipe">Recipes</h3>
 
           <div className="recipeList">
           {recipes.length > 0 ? (
                 <div className="recList">
                   <ul className="rList">
-                    {recipes.map((recipe, index) => (
-                      <li key={recipe.id || index} className="recipeBox" onClick={() => router.push(`/recipe_details/${recipe.id}`)}>
+                    {recipes.map((recipe) => (
+                      <li 
+                        key={recipe.id} 
+                        className="recipeBox" 
+                        onClick={() => user ? router.push(`/recipe_details/${recipe.id}`) : router.push("/login")}>
                         <h4 className="rName">{recipe.name}</h4>
                         <p><strong>Prep time: </strong> {recipe.prepTime} <strong> minute</strong></p>
                         <p><strong>Cook time: </strong>{recipe.cookTime} <strong> minute</strong></p>
@@ -162,8 +161,6 @@ export default function RecipesView() {
             </div>
         </div>
       </div>
-
-      
     </main>
   )
 }

@@ -41,7 +41,7 @@ export default function Register() {
       });
 
       // Redirect to home page
-      router.push("first");
+      router.push("/");
     } catch (error: any) {
       console.error("Error signing up:", error.message);
       alert(error.message);

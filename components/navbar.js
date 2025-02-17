@@ -22,8 +22,8 @@ const Navbar = () => {
       <ul>
         <li><Link href="/recipes_view">Home</Link></li>
         <li><Link href="/create">Create Recipe</Link></li>
-        <li><Link href="/contact">Contact</Link></li>
-        <li><button onClick={handleLogout}>Logout</button></li>
+        <li><Link href="/contact">Contact</Link></li> 
+        <li className='outBtn'><button className='logout' onClick={handleLogout}>Logout</button></li>
       </ul>
     </nav>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { db } from "../../firebaseConfig"; // Adjust path if needed
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import Navbar from "../../../components/navbar";
 import { getAuth } from "firebase/auth";
 
@@ -14,6 +14,7 @@ export default function RecipeEdit(){
     const auth = getAuth();
     const currentUserId = auth.currentUser?.uid;    
     const [recipe, setRecipe] = useState({
+      id: "",
       name: "",
       prepTime: "",
       cookTime: "",
@@ -82,17 +83,50 @@ export default function RecipeEdit(){
         });
     };
     
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-      
+    const handleDelete = async () => {
+        if (!id) return;
+    
+        const confirmDelete = window.confirm("Are you sure you want to delete this recipe?");
+        if (!confirmDelete) return;
+    
         try {
-          const recipeRef = doc(db, "recipes", id as string);
-          await updateDoc(recipeRef, { ...recipe, userId: currentUserId }); // Include userId
-          router.push(`/recipe_view/${id}`); // Redirect to updated recipe details page
+            const docRef = doc(db, "recipes", id as string);  // Use `id` from params
+            await deleteDoc(docRef);
+    
+            alert("Recipe deleted successfully!");  
+            router.push("/recipes_view"); 
         } catch (error) {
-          console.error("Error updating recipe:", error);
+            console.error("Error deleting recipe:", error);
+            alert("Failed to delete the recipe. Please try again.");
         }
-      };
+    };
+    
+
+      const isRecipeValid = () => {
+        if (!recipe.name || !recipe.prepTime || !recipe.cookTime || !recipe.servings) return false;
+        if (recipe.ingredients.some(ing => !ing.quantity || !ing.ingredient)) return false;
+        if (recipe.steps.some(step => !step.stepDesc)) return false;
+        return true;
+    };
+    
+
+      const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!isRecipeValid()) {
+            alert("Please fill in all required fields.");
+            return;
+        }
+    
+        try {
+            const recipeRef = doc(db, "recipes", recipe.id);
+            await updateDoc(recipeRef, { ...recipe, userId: currentUserId });
+    
+            alert("Recipe updated successfully!");
+            router.push(`/recipe_view/${id}`);
+        } catch (error) {
+            console.error("Error updating recipe:", error);
+        }
+    };
 
 return (
         <main className="main">
@@ -289,6 +323,12 @@ return (
                         <div className="submitRecipe">
                                 <button className="submit" onClick={handleSubmit} disabled={loading}>
                                     {loading ? "Submitting..." : "Submit Recipe"}
+                                </button>
+                                <button className="backHome" onClick={() => router.push("/recipes_view")}>
+                                Back to Home
+                                </button>
+                                <button className="dBtn" onClick={handleDelete}>
+                                Delete Recipe
                                 </button>
                         </div>
                     </div>   

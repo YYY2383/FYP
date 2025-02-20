@@ -739,6 +739,32 @@ th, td{
 
 .backHome{
   --main-focus: #2d8cf0;
+  --font-color: white;
+  --bg-color-sub: blue;
+  --bg-color: white;
+  --main-color: #dedede;
+  position: relative;
+  width: 150px;
+  height: 40px;
+  cursor: pointer;
+  border: 2px solid var(--main-color);
+  box-shadow: 4px 4px var(--main-color);
+  background-color: var(--main-focus);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 1rem;
+  margin-left: 1rem;
+  color: var(--font-color);
+  font-weight: 600;
+}
+
+.backHome:hover {
+  background: var(--bg-color);
+  color: var(--bg-color-sub);
+}
+
+.dBtn{
+  --main-focus: #2d8cf0;
   --font-color: blue;
   --bg-color-sub: blue;
   --bg-color: white;
@@ -758,8 +784,8 @@ th, td{
   font-weight: 600;
 }
 
-.backHome:hover {
-  background: var(--main-focus);
+.dBtn:hover {
+  background: red;
   color: white;
 }
 
@@ -874,7 +900,7 @@ th, td{
   font-size: 20px;
 }
 
-.editButton {
+.editBtn {
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -901,15 +927,15 @@ th, td{
   fill: white;
 }
 
-.editButton:hover {
+.editBtn:hover {
   width: 120px;
   border-radius: 50px;
   transition-duration: 0.3s;
-  background-color: rgb(255, 69, 69);
+  background-color: lightskyblue;
   align-items: center;
 }
 
-.editButton:hover .edit-svgIcon {
+.editBtn:hover .edit-svgIcon {
   width: 20px;
   transition-duration: 0.3s;
   transform: translateY(60%);
@@ -920,7 +946,7 @@ th, td{
   transform: rotate(360deg);
 }
 
-.editButton::before {
+.editBtn::before {
   display: none;
   content: "Edit";
   color: white;
@@ -928,7 +954,7 @@ th, td{
   font-size: 2px;
 }
 
-.editButton:hover::before {
+.editBtn:hover::before {
   display: block;
   padding-right: 10px;
   font-size: 13px;
@@ -938,7 +964,7 @@ th, td{
 }
 
 
-.homeButton {
+.homeBtn {
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -964,7 +990,7 @@ th, td{
   fill: white;
 }
 
-.homeButton:hover {
+.homeBtn:hover {
   width: 140px;
   border-radius: 50px;
   transition-duration: 0.3s;
@@ -972,13 +998,13 @@ th, td{
   align-items: center;
 }
 
-.homeButton:hover .svgIcon {
+.homeBtn:hover .svgIcon {
   /* width: 20px; */
   transition-duration: 0.3s;
   transform: translateY(-200%);
 }
 
-.homeButton::before {
+.homeBtn::before {
   position: absolute;
   bottom: -20px;
   content: "Back to Home";
@@ -987,7 +1013,7 @@ th, td{
   font-size: 0px;
 }
 
-.homeButton:hover::before {
+.homeBtn:hover::before {
   font-size: 13px;
   opacity: 1;
   bottom: unset;
@@ -1002,3 +1028,58 @@ th, td{
   margin: 1rem 0rem 1rem 0rem;
 }
 
+.deleteBtn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: rgb(20, 20, 20);
+  border: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.164);
+  cursor: pointer;
+  transition-duration: .3s;
+  overflow: hidden;
+  position: relative;
+}
+
+.svgIcon {
+  width: 12px;
+  transition-duration: .3s;
+}
+
+.svgIcon path {
+  fill: white;
+}
+
+.deleteBtn:hover {
+  width: 140px;
+  border-radius: 50px;
+  transition-duration: .3s;
+  background-color: rgb(255, 69, 69);
+  align-items: center;
+}
+
+.deleteBtn:hover .svgIcon {
+  width: 50px;
+  transition-duration: .3s;
+  transform: translateY(60%);
+}
+
+.deleteBtn::before {
+  position: absolute;
+  top: -20px;
+  content: "Delete";
+  color: white;
+  transition-duration: .3s;
+  font-size: 2px;
+}
+
+.deleteBtn:hover::before {
+  font-size: 13px;
+  opacity: 1;
+  transform: translateY(30px);
+  transition-duration: .3s;
+}

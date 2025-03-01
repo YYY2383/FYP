@@ -31,7 +31,7 @@ export default function RecipesView() {
     });
   
     return () => unsubscribe();
-  }, [router]);
+  }, [auth, router]);
 
   // Fetch recipes when user state updates
   const fetchRecipes = async (userId: string) => {

@@ -141,7 +141,7 @@ import {getAuth, onAuthStateChanged, User} from 'firebase/auth'
 
         return (
         <main className='main'>
-            <div className='container'>
+            <div className='main_container'>
                 <h1 className="appName">Food Compiler</h1>
             
                 <div className = 'body'>

@@ -349,6 +349,24 @@
 
 
 /* ---------------------------------------HOME-------------------------------------------------- */
+.search_container {
+  display: flex;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.search_input {
+  padding: 5px;
+  font-size: 14px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  outline: none;
+  width: 200px;
+}
+
+.search_input:focus {
+  border-color: #007bff;
+}
 
 .navbar {
     background-color: white;
@@ -802,11 +820,11 @@ th, td{
   display: flex;
   flex-direction: row;
   gap: 1rem;
-  margin: 1rem 0rem 1rem 0rem;
+  margin: 1rem 1rem 1rem 0rem;
   font-size: 30px;
   font-weight: bold;
   color: blue;
-  width: 100%;
+
 }
 
 .recipeList {

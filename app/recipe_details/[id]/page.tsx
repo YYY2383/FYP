@@ -4,9 +4,8 @@ import Navbar from "../../../components/navbar";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { db } from "../../firebaseConfig";
-import { doc, getDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, updateDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import PopUp from "@/components/popup";
 
 export default function RecipeDetails() {
   const params = useParams(); 
@@ -15,7 +14,8 @@ export default function RecipeDetails() {
   const [loading, setLoading] = useState(true);
   const [aiMode, setAiMode] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const [selectedIngredient, setSelectedIngredient] = useState<any>(null);
+  const [userInput, setUserInput] = useState("");
+  const [aiGeneratedRecipe, setAiGeneratedRecipe] = useState<any>(null);
   
 
 
@@ -28,7 +28,7 @@ export default function RecipeDetails() {
       const user = auth.currentUser;
 
       if (!user) {
-        router.push("/login");
+        router.push("/");
         return;
       }
 
@@ -76,34 +76,99 @@ export default function RecipeDetails() {
       alert("Failed to delete the recipe. Please try again.");
     }
   };
-  
 
-  
-  const handleIngredientClick = async (ingredient: string) => {
-    if (!aiMode) return; // Only work in AI mode
-  
+  const handleFullRecipeAI = async () => {
+    console.log("handleFullRecipeAI function called");
     try {
-      const response = await fetch("/api/ai", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ingredient }),
-      });
-  
-      // Check if the response is OK (status code 200-299)
-      if (!response.ok) {
-        const errorDetails = await response.json();
-        console.error("API Error Details:", errorDetails);
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      console.log("AI Mode:", aiMode);
+      console.log("Recipe:", recipe);
+      console.log("User Input:", userInput);
+
+      if (!aiMode || !recipe || !userInput.trim()) {
+        console.log("AI mode is off or required data is missing");
+        return;
       }
-  
-      // Parse the response as JSON
-      const data = await response.json();
-      setSelectedIngredient({ name: ingredient, ...data }); // Store the fetched data
-      setShowPopup(true); // Show the popup
+
+      try {
+        const response = await fetch("/api/ai", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "recipe",
+            recipe: {
+              name: recipe.name,
+              prepTime: recipe.prepTime,
+              cookTime: recipe.cookTime,
+              servings: recipe.servings,
+              ingredients: recipe.ingredients,
+              steps: recipe.steps,
+            },
+            userInput: userInput.trim(),
+          }),
+        });
+        console.log("Check api: ", response);
+        console.log("Response Headers:", response.headers);
+
+        if (!response.ok) {
+          const errorDetails = await response.json();
+          console.error("API Error Details:", errorDetails);
+          throw new Error(`API Error: ${response.status} ${response.statusText} - ${JSON.stringify(errorDetails)}`);
+        }
+
+        const responseJson = await response.json();
+        console.log("Raw Response Json:", responseJson);
+
+        let generatedRecipe;
+        try {
+          generatedRecipe = responseJson;
+          console.log("Generated Recipe:", generatedRecipe);
+        } catch (e) {
+          console.error("Error parsing JSON response:", e);
+          alert("Failed to process AI response. Please check the format.");
+          return;
+        }
+
+        setAiGeneratedRecipe(generatedRecipe);
+        console.log("Setting showPopup to true");
+        setShowPopup(true);
+
+      } catch (error) {
+        console.error("Error fetching AI-modified recipe:", error);
+        alert("Failed to fetch AI-modified recipe. Please try again.");
+      }
     } catch (error) {
-      console.error("Error fetching ingredient details:", error);
+      console.error("Error in handleFullRecipeAI: ", error);
+    }
+  };
+
+  const handleReplaceRecipe = async () => {
+    if (!recipe || !recipe.id || !aiGeneratedRecipe) {
+      alert("No AI-suggested recipe available to replace.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const recipeRef = doc(db, "recipes", recipe.id);
+      await updateDoc(recipeRef, {
+        name: aiGeneratedRecipe.name,
+        prepTime: aiGeneratedRecipe.prepTime,
+        cookTime: aiGeneratedRecipe.cookTime,
+        servings: aiGeneratedRecipe.servings,
+        ingredients: aiGeneratedRecipe.ingredients,
+        steps: aiGeneratedRecipe.steps,
+      });
+
+      setRecipe(aiGeneratedRecipe); // Update the state with the new recipe
+      alert("Recipe replaced successfully!");
+      setShowPopup(false);
+    } catch (error) {
+      console.error("Error updating recipe:", error);
+      alert("Failed to update recipe.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,7 +181,7 @@ export default function RecipeDetails() {
   return (
     <main className="main">
       <div className="main_container">
-        <h1 className="appName">Food Compiler</h1>
+        <h1 className="appName">ReciPal</h1>
         <div>
           <Navbar />
         </div>
@@ -155,6 +220,69 @@ export default function RecipeDetails() {
         <div className="details">
           <div className="ingredients">
             <b className="showIhead">Ingredients</b>
+            <div className="ai-actions">
+              <button onClick={() => {
+                console.log("AI Mode button clicked");
+                setAiMode(!aiMode);
+              }}>
+                {aiMode ? "Disable AI Mode" : "Enable AI Mode"}
+              </button>
+
+              {aiMode && (
+                <div className="ai-input-container">
+                  <textarea
+                    placeholder="Enter your dietary restrictions or preferences..."
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                  />
+                  <button onClick={() => {
+                    console.log("Get AI Suggestions button clicked");
+                    handleFullRecipeAI();
+                  }}>Get AI Suggestions</button>
+                </div>
+              )}
+              {showPopup && aiGeneratedRecipe && (
+                <div className="popUp">
+                  <div className = "popContent">
+                    <h2 className="AItitle">AI Generated Recipe</h2>
+                    <h3>{aiGeneratedRecipe.name}</h3>
+                    <p><b>Prep Time: </b> {aiGeneratedRecipe.prepTime} <b> minutes</b></p>
+                    <p><b>Cook Time: </b> {aiGeneratedRecipe.cookTime} <b> minutes</b></p>
+                    <p><b>Servings: </b> {aiGeneratedRecipe.servings} <b> servings</b></p>
+                    <h4>Ingredients: </h4>
+                    <ul>
+                      {aiGeneratedRecipe.ingredients?.map((item: { ingredient: string; quantity: number; unit: string }, index: number) => (
+                        <li key={index}>
+                          {item.quantity} {item.unit} {item.ingredient}
+                        </li>
+                      ))}
+                    </ul>
+                    <h4>Steps: </h4>
+                    <ol>
+                      {aiGeneratedRecipe.steps?.map((step: { stepDesc: string }, index: number) => (
+                        <li key={index}>
+                          {step.stepDesc}
+                        </li>
+                      ))}
+                    </ol>
+                    <div className="popButtons">
+                      <button onClick={() => {
+                        console.log("Replace Recipe button clicked");
+                        handleReplaceRecipe();
+                      }}>Replace Recipe</button>
+                      <button onClick={() => {
+                        console.log("Close Popup button clicked");
+                        setShowPopup(false);
+                      }}>Close</button>
+                    </div>
+                  </div>
+                </div>    
+            )}
+            {!showPopup && aiGeneratedRecipe && (
+              <button onClick={() => setShowPopup(true)}>Reopen AI Generated Recipe</button>
+            )}
+            </div>
+
             <div className="IngList">
               <table className="ingTable">
                   <thead>
@@ -166,7 +294,7 @@ export default function RecipeDetails() {
                   </thead>
                   <tbody>
                   {recipe.ingredients?.map((item: { ingredient: string; quantity: number; unit: string }, index: number) => (
-                          <tr key={index} onClick={() => handleIngredientClick(item.ingredient)}>
+                          <tr key={index}>
                               <td className="showQuantity">
                                   {item.quantity}
                               </td>
@@ -182,11 +310,6 @@ export default function RecipeDetails() {
               </table>
             </div>
           </div>
-
-          <button onClick={() => setAiMode(!aiMode)}>
-            {aiMode ? "Disable AI Mode" : "Enable AI Mode"}
-          </button>
-
         </div>  
         
         
@@ -234,16 +357,9 @@ export default function RecipeDetails() {
               </button>
 
 
+        </div>
       </div>
-        
-      </div>
-
-      {showPopup && (
-        <PopUp
-          ingredient={selectedIngredient}
-          onClose={() => setShowPopup(false)}
-        />
-      )}
+      
     </main>
   );
 }

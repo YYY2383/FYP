@@ -131,7 +131,7 @@ export default function RecipeEdit(){
 return (
         <main className="main">
             <div className="main_container">
-                <h1 className="appName">Food Compiler</h1>
+                <h1 className="appName">ReciPal</h1>
 
                 <div className="body">
                     <div>

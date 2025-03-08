@@ -1,31 +1,58 @@
-import '../app/globals.css';
-import Link from 'next/link';
-import { getAuth, signOut } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+"use client"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { getAuth, signOut } from "firebase/auth"
+import { Button } from "@/components/ui/button"
+import { Home, PlusCircle, LogOut } from "lucide-react"
 
-const Navbar = () => {
-  const router = useRouter();
+export default function Navbar() {
+  const router = useRouter()
+  const auth = getAuth()
 
   const handleLogout = async () => {
-    const auth = getAuth();
-    
     try {
-      await signOut(auth);
-      router.push('/'); // Redirect user to the login page after logout
+      await signOut(auth)
+      router.push("/")
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error("Error signing out:", error)
     }
-  };
+  }
 
   return (
-    <nav className="navbar">
-      <ul>
-        <li><Link href="/recipes_view">Home</Link></li>
-        <li><Link href="/recipe_create">Create Recipe</Link></li> 
-        <li className='outBtn'><button className='logout' onClick={handleLogout}>Logout</button></li>
-      </ul>
+    <nav className="bg-white rounded-lg shadow-sm border border-strawberry-200 p-1">
+      <div className="flex flex-wrap items-center justify-between">
+        <div className="flex flex-wrap items-center gap-1">
+          <Button
+            variant="ghost"
+            asChild
+            className="flex items-center gap-2 text-crust-600 hover:text-strawberry-500 hover:bg-cream-100"
+          >
+            <Link href="/recipes_view">
+              <Home size={16} />
+              <span>Home</span>
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            asChild
+            className="flex items-center gap-2 text-crust-600 hover:text-strawberry-500 hover:bg-cream-100"
+          >
+            <Link href="/recipe_create">
+              <PlusCircle size={16} />
+              <span>Create Recipe</span>
+            </Link>
+          </Button>
+        </div>
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className="flex items-center gap-2 text-crust-600 hover:text-strawberry-500 hover:bg-cream-100"
+        >
+          <LogOut size={16} />
+          <span>Logout</span>
+        </Button>
+      </div>
     </nav>
-  );
-};
+  )
+}
 
-export default Navbar;

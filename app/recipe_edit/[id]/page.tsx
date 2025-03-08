@@ -1,339 +1,408 @@
-"use client";
+"use client"
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { db } from "../../firebaseConfig"; // Adjust path if needed
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
-import Navbar from "../../../components/navbar";
-import { getAuth } from "firebase/auth";
 
-export default function RecipeEdit(){
-    const [loading] = useState(false);
-    const { id } = useParams();
-    const router = useRouter();
-    const auth = getAuth();
-    const currentUserId = auth.currentUser?.uid;    
-    const [recipe, setRecipe] = useState({
-      id: "",
-      name: "",
-      prepTime: "",
-      cookTime: "",
-      servings: "",
-      ingredients: [{ quantity: "", unit: "millilitre", ingredient: "" }],
-      steps: [{ stepNo: "1", stepDesc: "" }],
-    });
-        
-    useEffect(() => {
-        if (!id) return;
-    
-        const fetchRecipe = async () => {
-            try {
-              const recipeRef = doc(db, "recipes", id as string);
-              const docSnap = await getDoc(recipeRef);
-          
-              if (docSnap.exists()) {
-                const recipeData = docSnap.data() as any;
-                if (recipeData.userId === currentUserId) { // Ensure userId matches
-                  setRecipe(recipeData);
-                } else {
-                  console.error("You do not have permission to edit this recipe");
-                }
-              } else {
-                console.error("Recipe not found");
-              }
-            } catch (error) {
-              console.error("Error fetching recipe:", error);
-            }
-          };
-          
-    
-        fetchRecipe();
-      }, [id]);
-    
-      const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setRecipe({ ...recipe, [e.target.name]: e.target.value });
-      };
-    
-      const handleArrayChange = (index: number, value: string, field: "ingredients" | "steps", key: string) => {
-        setRecipe((prev) => {
-            const updatedArray = prev[field].map((item, i) => 
-                i === index ? { ...item, [key]: value } : item
-            );
-            return { ...prev, [field]: updatedArray };
-        });
-    };
-    
-    
-        const addArrayItem = (field: "ingredients" | "steps") => {
-            const newItem = field === "ingredients" 
-                ? { quantity: "", unit: "millilitre", ingredient: "" } 
-                : { stepNo: (recipe.steps.length + 1).toString(), stepDesc: "" };
-            setRecipe({ ...recipe, [field]: [...recipe[field], newItem] });
-        };
-    
+import type React from "react"
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore"
+import { getAuth } from "firebase/auth"
+import { db } from "../../firebaseConfig"
+import Navbar from "@/components/navbar"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ChevronLeft, Plus, Trash2 } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
-      const deleteStep = (index: number) => {
-        setRecipe((prev) => {
-            const updatedSteps = prev.steps.filter((_, i) => i !== index);
-            const reindexedSteps = updatedSteps.map((step, i) => ({
-                ...step,
-                stepNo: (i + 1).toString(),
-            }));
-            return { ...prev, steps: reindexedSteps };
-        });
-    };
-    
-    const handleDelete = async () => {
-        if (!id) return;
-    
-        const confirmDelete = window.confirm("Are you sure you want to delete this recipe?");
-        if (!confirmDelete) return;
-    
-        try {
-            const docRef = doc(db, "recipes", id as string);  // Use `id` from params
-            await deleteDoc(docRef);
-    
-            alert("Recipe deleted successfully!");  
-            router.push("/recipes_view"); 
-        } catch (error) {
-            console.error("Error deleting recipe:", error);
-            alert("Failed to delete the recipe. Please try again.");
+export default function RecipeEdit() {
+  const { id } = useParams()
+  const router = useRouter()
+  const auth = getAuth()
+  const currentUserId = auth.currentUser?.uid
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [recipe, setRecipe] = useState({
+    id: "",
+    name: "",
+    prepTime: "",
+    cookTime: "",
+    servings: "",
+    ingredients: [{ quantity: "", unit: "millilitre", ingredient: "" }],
+    steps: [{ stepNo: "1", stepDesc: "" }],
+  })
+
+  useEffect(() => {
+    if (!id) return
+
+    const fetchRecipe = async () => {
+      try {
+        const recipeRef = doc(db, "recipes", id as string)
+        const docSnap = await getDoc(recipeRef)
+
+        if (docSnap.exists()) {
+          const recipeData = docSnap.data() as any
+          if (recipeData.userId === currentUserId) {
+            setRecipe({ ...recipeData, id: id as string })
+          } else {
+            setError("You do not have permission to edit this recipe")
+            setTimeout(() => router.push("/recipes_view"), 2000)
+          }
+        } else {
+          setError("Recipe not found")
+          setTimeout(() => router.push("/recipes_view"), 2000)
         }
-    };
-    
+      } catch (error) {
+        console.error("Error fetching recipe:", error)
+        setError("Error loading recipe")
+      }
+    }
 
-      const isRecipeValid = () => {
-        if (!recipe.name || !recipe.prepTime || !recipe.cookTime || !recipe.servings) return false;
-        if (recipe.ingredients.some(ing => !ing.quantity || !ing.ingredient)) return false;
-        if (recipe.steps.some(step => !step.stepDesc)) return false;
-        return true;
-    };
-    
+    fetchRecipe()
+  }, [id, currentUserId, router])
 
-      const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!isRecipeValid()) {
-            alert("Please fill in all required fields.");
-            return;
-        }
-    
-        try {
-            const recipeRef = doc(db, "recipes", recipe.id);
-            await updateDoc(recipeRef, { ...recipe, userId: currentUserId });
-    
-            alert("Recipe updated successfully!");
-            router.push(`/recipe_view/${id}`);
-        } catch (error) {
-            console.error("Error updating recipe:", error);
-        }
-    };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRecipe({ ...recipe, [e.target.name]: e.target.value })
+  }
 
-return (
-        <main className="main">
-            <div className="main_container">
-                <h1 className="appName">ReciPal</h1>
+  const handleArrayChange = (index: number, value: string, field: "ingredients" | "steps", key: string) => {
+    setRecipe((prev) => {
+      const updatedArray = prev[field].map((item, i) => (i === index ? { ...item, [key]: value } : item))
+      return { ...prev, [field]: updatedArray }
+    })
+  }
 
-                <div className="body">
-                    <div>
-                        <Navbar />
-                    </div>
+  const addArrayItem = (field: "ingredients" | "steps") => {
+    const newItem =
+      field === "ingredients"
+        ? { quantity: "", unit: "millilitre", ingredient: "" }
+        : { stepNo: (recipe.steps.length + 1).toString(), stepDesc: "" }
+    setRecipe({ ...recipe, [field]: [...recipe[field], newItem] })
+  }
 
-                    <h2>Edit Recipe</h2>
+  const deleteStep = (index: number) => {
+    setRecipe((prev) => {
+      const updatedSteps = prev.steps.filter((_, i) => i !== index)
+      const reindexedSteps = updatedSteps.map((step, i) => ({
+        ...step,
+        stepNo: (i + 1).toString(),
+      }))
+      return { ...prev, steps: reindexedSteps }
+    })
+  }
 
-                    <div className="details">
-                        <div className="recipeName">
-                            <label>Recipe Name:</label>
-                            <input type="text" name="name" value={recipe.name} onChange={handleChange} />
-                        </div>
+  const deleteIngredient = (index: number) => {
+    setRecipe((prev) => {
+      const updatedIngredients = prev.ingredients.filter((_, i) => i !== index)
+      return { ...prev, ingredients: updatedIngredients }
+    })
+  }
 
-                        <div className="prepTime">
-                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor">
-                                <path d="M13.7678 12.2288L15.8892 14.3501C11.293 18.9463 5.63612 20.3605 2.10059 19.6534L17.6569 4.09705L19.7783 6.21837L13.7678 12.2288Z"></path>
-                            </svg>
-                            <b>Prep Time:</b>
-                            <div>
-                                <input type="number" name="prepTime" value={recipe.prepTime} onChange={handleChange} />
-                            </div>    
-                            <p><strong>minutes</strong></p>
-                        </div>
+  const handleDelete = async () => {
+    if (!id) return
 
-                        <div className="cookTime">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h20"></path><path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"></path><path d="m4 8 16-4"></path><path d="m8.86 6.78-.45-1.81a2 2 0 0 1 1.45-2.43l1.94-.48a2 2 0 0 1 2.43 1.46l.45 1.8"></path></svg>
-                            <b>Cook Time: </b>
-                            <div>
-                                <input type="number" name="cookTime" value={recipe.cookTime} onChange={handleChange} />
-                            </div>
-                            <p><strong>minutes</strong></p> 
-                        </div>
+    const confirmDelete = window.confirm("Are you sure you want to delete this recipe?")
+    if (!confirmDelete) return
 
-                        <div className="servings">
-                            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8.597 3.2A1 1 0 0 0 7.04 4.289a3.49 3.49 0 0 1 .057 1.795 3.448 3.448 0 0 1-.84 1.575.999.999 0 0 0-.077.094c-.596.817-3.96 5.6-.941 10.762l.03.049a7.73 7.73 0 0 0 2.917 2.602 7.617 7.617 0 0 0 3.772.829 8.06 8.06 0 0 0 3.986-.975 8.185 8.185 0 0 0 3.04-2.864c1.301-2.2 1.184-4.556.588-6.441-.583-1.848-1.68-3.414-2.607-4.102a1 1 0 0 0-1.594.757c-.067 1.431-.363 2.551-.794 3.431-.222-2.407-1.127-4.196-2.224-5.524-1.147-1.39-2.564-2.3-3.323-2.788a8.487 8.487 0 0 1-.432-.287Z"/>
-                            </svg>
-                            <b>Servings: </b>
-                            <div>
-                                <input type="number" name="servings" value={recipe.servings} onChange={handleChange} />
-                            </div>
-                            <p><strong>servings</strong></p>
-                        </div>
+    try {
+      const docRef = doc(db, "recipes", id as string)
+      await deleteDoc(docRef)
 
-                        <div className="ingredients">
-                            <b className="ingHead">Ingredients</b>
-                            <div className="ing_list">
-                                <table className="ingTable">
-                                    <thead>
-                                        <tr>
-                                            <th className="qh">Quantity</th>
-                                            <th className="uh">Unit</th>
-                                            <th className="ih">Ingredient</th>
-                                            <th className="dh"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {recipe.ingredients.map((ingredient, index)=>(
-                                            <tr key={index}>
-                                                <td className="quantity">
-                                                    <input type="number" name="quantity" value={ingredient.quantity} onChange={(e) => handleArrayChange(index, e.target.value, "ingredients", "quantity")}/>
-                                                </td>
-                                                <td className="unit">
-                                                    <select
-                                                        name="unit"
-                                                        value={ingredient.unit}
-                                                        onChange={(e) => handleArrayChange(index, e.target.value, "ingredients", "unit")}
+      alert("Recipe deleted successfully!")
+      router.push("/recipes_view")
+    } catch (error) {
+      console.error("Error deleting recipe:", error)
+      alert("Failed to delete the recipe. Please try again.")
+    }
+  }
 
-                                                    >
-                                                        <option value="millilitre">Millilitre</option>
-                                                        <option value="litre">Litre</option>
-                                                        <option value="teaspoon">Teaspoon</option>
-                                                        <option value="tablespoon">Tablespoon</option>
-                                                        <option value="cup">Cup</option>
-                                                        <option value="kilogram">Kilogram</option>
-                                                        <option value="gram">Gram</option>
-                                                        <option value="ounce">Ounce</option>
-                                                    </select>
-                                                </td>
-                                                <td className="ing">
-                                                    <input type="text" name="ingredient" value={ingredient.ingredient} onChange={(e) => handleArrayChange(index, e.target.value, "ingredients", "ingredient")} />
-                                                </td>
-                                                <td className="deleteIng">
-                                                    <button className="deleteButton"
-                                                    onClick={() => setRecipe({ ...recipe, ingredients: recipe.ingredients.filter((_, i) => i !== index) })}>
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 50 59"
-                                                            className="bin"
-                                                        >
-                                                            <path
-                                                                fill="#B5BAC1"
-                                                                d="M0 7.5C0 5.01472 2.01472 3 4.5 3H45.5C47.9853 3 50 5.01472 50 7.5V7.5C50 8.32843 49.3284 9 48.5 9H1.5C0.671571 9 0 8.32843 0 7.5V7.5Z"
-                                                            ></path>
-                                                            <path
-                                                                fill="#B5BAC1"
-                                                                d="M17 3C17 1.34315 18.3431 0 20 0H29.3125C30.9694 0 32.3125 1.34315 32.3125 3V3H17V3Z"
-                                                            ></path>
-                                                            <path
-                                                                fill="#B5BAC1"
-                                                                d="M2.18565 18.0974C2.08466 15.821 3.903 13.9202 6.18172 13.9202H43.8189C46.0976 13.9202 47.916 15.821 47.815 18.0975L46.1699 55.1775C46.0751 57.3155 44.314 59.0002 42.1739 59.0002H7.8268C5.68661 59.0002 3.92559 57.3155 3.83073 55.1775L2.18565 18.0974ZM18.0003 49.5402C16.6196 49.5402 15.5003 48.4209 15.5003 47.0402V24.9602C15.5003 23.5795 16.6196 22.4602 18.0003 22.4602C19.381 22.4602 20.5003 23.5795 20.5003 24.9602V47.0402C20.5003 48.4209 19.381 49.5402 18.0003 49.5402ZM29.5003 47.0402C29.5003 48.4209 30.6196 49.5402 32.0003 49.5402C33.381 49.5402 34.5003 48.4209 34.5003 47.0402V24.9602C34.5003 23.5795 33.381 22.4602 32.0003 22.4602C30.6196 22.4602 29.5003 23.5795 29.5003 24.9602V47.0402Z"
-                                                                clipRule="evenodd"
-                                                                fillRule="evenodd"
-                                                            ></path>
-                                                            <path fill="#B5BAC1" d="M2 13H48L47.6742 21.28H2.32031L2 13Z"></path>
-                                                        </svg>
-                                                    </button>    
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+  const isRecipeValid = () => {
+    if (!recipe.name || !recipe.prepTime || !recipe.cookTime || !recipe.servings) return false
+    if (recipe.ingredients.some((ing) => !ing.quantity || !ing.ingredient)) return false
+    if (recipe.steps.some((step) => !step.stepDesc)) return false
+    return true
+  }
 
-                                <button type="button" className="addRow" onClick={() => addArrayItem("ingredients")}>
-                                    <span className="button__text">Add Ingredient</span>
-                                    <span className="button__icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" stroke="currentColor" height="24" fill="none" className="svg"><line y2="19" y1="5" x2="12" x1="12"></line><line y2="12" y1="12" x2="19" x1="5"></line></svg></span>
-                                </button>      
-                            </div>
-                        </div> 
-                     
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!isRecipeValid()) {
+      alert("Please fill in all required fields.")
+      return
+    }
 
-                        <div className="steps">
-                            <b className="stepHead">Steps</b>
-                            <div className="step_list">
-                                <table className="stepTable">
-                                    <thead>
-                                        <tr>
-                                            <th className="stepH">Step</th>
-                                            <th className="stepDH">Description</th>
-                                            <th className="stepD"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {recipe.steps.map((step, index) => (
-                                            <tr key={index}>
-                                                <td className="stepNo">
-                                                    <input type="number" name="stepNo" value={step.stepNo} onChange={(e) => handleArrayChange(index, e.target.value, "steps", "stepNo")}/>
-                                                </td>
-                                                <td className="stepDesc">
-                                                    <input type="text" name="stepDesc" value={step.stepDesc} onChange={(e) => handleArrayChange(index, e.target.value, "steps", "stepDesc")}/>
-                                                </td>
-                                                <td className="deleteStep">
-                                                    <button
-                                                        className="deleteButton"
-                                                        onClick={() => deleteStep(index)}
-                                                    >
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 50 59"
-                                                            className="bin"
-                                                        >
-                                                            <path
-                                                                fill="#B5BAC1"
-                                                                d="M0 7.5C0 5.01472 2.01472 3 4.5 3H45.5C47.9853 3 50 5.01472 50 7.5V7.5C50 8.32843 49.3284 9 48.5 9H1.5C0.671571 9 0 8.32843 0 7.5V7.5Z"
-                                                            ></path>
-                                                            <path
-                                                                fill="#B5BAC1"
-                                                                d="M17 3C17 1.34315 18.3431 0 20 0H29.3125C30.9694 0 32.3125 1.34315 32.3125 3V3H17V3Z"
-                                                            ></path>
-                                                            <path
-                                                                fill="#B5BAC1"
-                                                                d="M2.18565 18.0974C2.08466 15.821 3.903 13.9202 6.18172 13.9202H43.8189C46.0976 13.9202 47.916 15.821 47.815 18.0975L46.1699 55.1775C46.0751 57.3155 44.314 59.0002 42.1739 59.0002H7.8268C5.68661 59.0002 3.92559 57.3155 3.83073 55.1775L2.18565 18.0974ZM18.0003 49.5402C16.6196 49.5402 15.5003 48.4209 15.5003 47.0402V24.9602C15.5003 23.5795 16.6196 22.4602 18.0003 22.4602C19.381 22.4602 20.5003 23.5795 20.5003 24.9602V47.0402C20.5003 48.4209 19.381 49.5402 18.0003 49.5402ZM29.5003 47.0402C29.5003 48.4209 30.6196 49.5402 32.0003 49.5402C33.381 49.5402 34.5003 48.4209 34.5003 47.0402V24.9602C34.5003 23.5795 33.381 22.4602 32.0003 22.4602C30.6196 22.4602 29.5003 23.5795 29.5003 24.9602V47.0402Z"
-                                                                clipRule="evenodd"
-                                                                fillRule="evenodd"
-                                                            ></path>
-                                                            <path fill="#B5BAC1" d="M2 13H48L47.6742 21.28H2.32031L2 13Z"></path>
-                                                        </svg>
-                                                    </button>
-                                                </td>
-                                            </tr>    
-                                        ))}
-                                    </tbody>
-                                </table>
-                                <button type="button" className="addStep" onClick={() => addArrayItem("steps")}>
-                                    <span className="button__text">Add Step</span>
-                                    <span className="button__icon">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" stroke="currentColor" height="24" fill="none" className="svg">
-                                            <line y2="19" y1="5" x2="12" x1="12"></line>
-                                            <line y2="12" y1="12" x2="19" x1="5"></line>
-                                        </svg>
-                                    </span>
-                                </button>
-                            </div>
-                        </div>  
+    setLoading(true)
+    try {
+      const recipeRef = doc(db, "recipes", recipe.id)
+      await updateDoc(recipeRef, { ...recipe, userId: currentUserId })
 
-                        <div className="submitRecipe">
-                                <button className="submit" onClick={handleSubmit} disabled={loading}>
-                                    {loading ? "Submitting..." : "Submit Recipe"}
-                                </button>
-                                <button className="backHome" onClick={() => router.push("/recipes_view")}>
-                                Back to Home
-                                </button>
-                                <button className="dBtn" onClick={handleDelete}>
-                                Delete Recipe
-                                </button>
-                        </div>
-                    </div>   
+      alert("Recipe updated successfully!")
+      router.push(`/recipe_details/${id}`)
+    } catch (error) {
+      console.error("Error updating recipe:", error)
+      setError("Failed to update recipe")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+
+  return (
+    <main className="min-h-screen bg-cream-50">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-5xl font-bold text-strawberry-500 mb-6 drop-shadow-md">ReciPal</h1>
+
+        <Navbar />
+
+        <div className="mt-8">
+          <Button
+            variant="ghost"
+            className="mb-4 flex items-center gap-2 text-crust-600 hover:text-strawberry-500"
+            onClick={() => router.push(`/recipe_details/${id}`)}
+          >
+            <ChevronLeft size={16} />
+            Back to Recipe
+          </Button>
+
+          <div className="recipe-header mb-6">
+            <h2 className="text-2xl font-semibold text-strawberry-600">Edit Recipe</h2>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <Card className="mb-8 border-strawberry-200 bg-white shadow-md">
+              <CardContent className="pt-6 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-crust-600">
+                    Recipe Name
+                  </Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={recipe.name}
+                    onChange={handleChange}
+                    required
+                    className="border-crust-200 focus:border-strawberry-400"
+                  />
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="prepTime" className="text-crust-600">
+                      Prep Time (minutes)
+                    </Label>
+                    <Input
+                      id="prepTime"
+                      name="prepTime"
+                      type="number"
+                      value={recipe.prepTime}
+                      onChange={handleChange}
+                      required
+                      className="border-crust-200 focus:border-strawberry-400"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cookTime" className="text-crust-600">
+                      Cook Time (minutes)
+                    </Label>
+                    <Input
+                      id="cookTime"
+                      name="cookTime"
+                      type="number"
+                      value={recipe.cookTime}
+                      onChange={handleChange}
+                      required
+                      className="border-crust-200 focus:border-strawberry-400"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="servings" className="text-crust-600">
+                      Servings
+                    </Label>
+                    <Input
+                      id="servings"
+                      name="servings"
+                      type="number"
+                      value={recipe.servings}
+                      onChange={handleChange}
+                      required
+                      className="border-crust-200 focus:border-strawberry-400"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-strawberry-600">Ingredients</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => addArrayItem("ingredients")}
+                  className="flex items-center gap-2 border-strawberry-200 text-strawberry-500 hover:bg-strawberry-50"
+                >
+                  <Plus size={16} />
+                  Add Ingredient
+                </Button>
+              </div>
+
+              <div className="bg-white rounded-lg border border-strawberry-200 shadow-md overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-cream-100">
+                    <TableRow>
+                      <TableHead className="w-[120px] text-crust-600">Quantity</TableHead>
+                      <TableHead className="w-[180px] text-crust-600">Unit</TableHead>
+                      <TableHead className="text-crust-600">Ingredient</TableHead>
+                      <TableHead className="w-[80px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recipe.ingredients.map((ingredient, index) => (
+                      <TableRow key={index} className={index % 2 === 0 ? "bg-white" : "bg-cream-50"}>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={ingredient.quantity}
+                            onChange={(e) => handleArrayChange(index, e.target.value, "ingredients", "quantity")}
+                            required
+                            className="border-crust-200 focus:border-strawberry-400"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={ingredient.unit}
+                            onValueChange={(value) => handleArrayChange(index, value, "ingredients", "unit")}
+                          >
+                            <SelectTrigger className="border-crust-200 focus:border-strawberry-400">
+                              <SelectValue placeholder="Select unit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="millilitre">Millilitre</SelectItem>
+                              <SelectItem value="litre">Litre</SelectItem>
+                              <SelectItem value="teaspoon">Teaspoon</SelectItem>
+                              <SelectItem value="tablespoon">Tablespoon</SelectItem>
+                              <SelectItem value="cup">Cup</SelectItem>
+                              <SelectItem value="kilogram">Kilogram</SelectItem>
+                              <SelectItem value="gram">Gram</SelectItem>
+                              <SelectItem value="ounce">Ounce</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="text"
+                            value={ingredient.ingredient}
+                            onChange={(e) => handleArrayChange(index, e.target.value, "ingredients", "ingredient")}
+                            required
+                            className="border-crust-200 focus:border-strawberry-400"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteIngredient(index)}
+                            disabled={recipe.ingredients.length <= 1}
+                            className="text-crust-400 hover:text-strawberry-500"
+                          >
+                            <Trash2 size={16} />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
-        </main>
-    );
+
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-strawberry-600">Steps</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => addArrayItem("steps")}
+                  className="flex items-center gap-2 border-strawberry-200 text-strawberry-500 hover:bg-strawberry-50"
+                >
+                  <Plus size={16} />
+                  Add Step
+                </Button>
+              </div>
+
+              <div className="bg-white rounded-lg border border-strawberry-200 shadow-md overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-cream-100">
+                    <TableRow>
+                      <TableHead className="w-[80px] text-crust-600">Step</TableHead>
+                      <TableHead className="text-crust-600">Description</TableHead>
+                      <TableHead className="w-[80px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recipe.steps.map((step, index) => (
+                      <TableRow key={index} className={index % 2 === 0 ? "bg-white" : "bg-cream-50"}>
+                        <TableCell className="font-medium text-strawberry-500">{index + 1}</TableCell>
+                        <TableCell>
+                          <Input
+                            type="text"
+                            value={step.stepDesc}
+                            onChange={(e) => handleArrayChange(index, e.target.value, "steps", "stepDesc")}
+                            required
+                            className="border-crust-200 focus:border-strawberry-400"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteStep(index)}
+                            disabled={recipe.steps.length <= 1}
+                            className="text-crust-400 hover:text-strawberry-500"
+                          >
+                            <Trash2 size={16} />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button type="submit" disabled={loading} className="flex-1 bg-strawberry-500 hover:bg-strawberry-600">
+                {loading ? "Saving..." : "Save Recipe"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push(`/recipe_details/${id}`)}
+                className="flex-1 border-crust-200 text-crust-600"
+              >
+                Cancel
+              </Button>
+              <Button type="button" variant="destructive" onClick={handleDelete} className="flex-1">
+                Delete Recipe
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  )
 }
+

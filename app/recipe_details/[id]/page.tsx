@@ -1,157 +1,147 @@
-"use client";
+"use client"
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Navbar from "../../../components/navbar";
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { db } from "../../firebaseConfig";
-import { doc, getDoc, deleteDoc, updateDoc } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { doc, getDoc, deleteDoc, updateDoc } from "firebase/firestore"
+import { getAuth } from "firebase/auth"
+import { db } from "../../firebaseConfig"
+import Navbar from "@/components/navbar"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Clock, Users, ChevronLeft, Edit, Trash2, Sparkles, Eye } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 export default function RecipeDetails() {
-  const params = useParams(); 
-  const router = useRouter();
-  const [recipe, setRecipe] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [aiMode, setAiMode] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
-  const [userInput, setUserInput] = useState("");
-  const [aiGeneratedRecipe, setAiGeneratedRecipe] = useState<any>(null);
-  
-
+  const params = useParams()
+  const router = useRouter()
+  const [recipe, setRecipe] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [aiMode, setAiMode] = useState(false)
+  const [showPopup, setShowPopup] = useState(false)
+  const [userInput, setUserInput] = useState("")
+  const [aiGeneratedRecipe, setAiGeneratedRecipe] = useState<any>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [hasGeneratedRecipe, setHasGeneratedRecipe] = useState(false)
 
   useEffect(() => {
     const fetchRecipe = async () => {
-      const recipeId = params?.id as string; 
-      if (!recipeId) return;
+      const recipeId = params?.id as string
+      if (!recipeId) return
 
-      const auth = getAuth(); 
-      const user = auth.currentUser;
+      const auth = getAuth()
+      const user = auth.currentUser
 
       if (!user) {
-        router.push("/");
-        return;
+        router.push("/")
+        return
       }
 
       try {
-        const docRef = doc(db, "recipes", recipeId);
-        const docSnap = await getDoc(docRef);
+        const docRef = doc(db, "recipes", recipeId)
+        const docSnap = await getDoc(docRef)
 
         if (docSnap.exists()) {
-          const fetchedRecipe = { id: docSnap.id, userId: docSnap.data().userId, ...docSnap.data() };
+          const fetchedRecipe = { id: docSnap.id, userId: docSnap.data().userId, ...docSnap.data() }
           if (fetchedRecipe.userId !== user.uid) {
-            // If not, redirect to home or show an error
-            router.push("/");
-            return;
+            router.push("/recipes_view")
+            return
           }
 
-          setRecipe(fetchedRecipe);
+          setRecipe(fetchedRecipe)
         } else {
-          console.log("Recipe not found");
-          router.push("/"); 
+          console.log("Recipe not found")
+          router.push("/recipes_view")
         }
       } catch (error) {
-        console.error("Error fetching recipe:", error);
-      }finally {
-        setLoading(false); // Done loading
+        console.error("Error fetching recipe:", error)
+      } finally {
+        setLoading(false)
       }
-    };
+    }
 
-    fetchRecipe();
-  }, [params, router]);
+    fetchRecipe()
+  }, [params, router])
 
   const handleDelete = async () => {
-    if (!recipe) return;
-  
-    const confirmDelete = window.confirm("Are you sure you want to delete this recipe?");
-    if (!confirmDelete) return;
-  
+    if (!recipe) return
+
+    const confirmDelete = window.confirm("Are you sure you want to delete this recipe?")
+    if (!confirmDelete) return
+
     try {
-      const docRef = doc(db, "recipes", recipe.id);
-      await deleteDoc(docRef);
-  
-      alert("Recipe deleted successfully!");
-      router.push("/recipes_view"); // Redirect to recipe list after deletion
+      const docRef = doc(db, "recipes", recipe.id)
+      await deleteDoc(docRef)
+
+      alert("Recipe deleted successfully!")
+      router.push("/recipes_view")
     } catch (error) {
-      console.error("Error deleting recipe:", error);
-      alert("Failed to delete the recipe. Please try again.");
+      console.error("Error deleting recipe:", error)
+      alert("Failed to delete the recipe. Please try again.")
     }
-  };
+  }
 
   const handleFullRecipeAI = async () => {
-    console.log("handleFullRecipeAI function called");
-    try {
-      console.log("AI Mode:", aiMode);
-      console.log("Recipe:", recipe);
-      console.log("User Input:", userInput);
-
-      if (!aiMode || !recipe || !userInput.trim()) {
-        console.log("AI mode is off or required data is missing");
-        return;
-      }
-
-      try {
-        const response = await fetch("/api/ai", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: "recipe",
-            recipe: {
-              name: recipe.name,
-              prepTime: recipe.prepTime,
-              cookTime: recipe.cookTime,
-              servings: recipe.servings,
-              ingredients: recipe.ingredients,
-              steps: recipe.steps,
-            },
-            userInput: userInput.trim(),
-          }),
-        });
-        console.log("Check api: ", response);
-        console.log("Response Headers:", response.headers);
-
-        if (!response.ok) {
-          const errorDetails = await response.json();
-          console.error("API Error Details:", errorDetails);
-          throw new Error(`API Error: ${response.status} ${response.statusText} - ${JSON.stringify(errorDetails)}`);
-        }
-
-        const responseJson = await response.json();
-        console.log("Raw Response Json:", responseJson);
-
-        let generatedRecipe;
-        try {
-          generatedRecipe = responseJson;
-          console.log("Generated Recipe:", generatedRecipe);
-        } catch (e) {
-          console.error("Error parsing JSON response:", e);
-          alert("Failed to process AI response. Please check the format.");
-          return;
-        }
-
-        setAiGeneratedRecipe(generatedRecipe);
-        console.log("Setting showPopup to true");
-        setShowPopup(true);
-
-      } catch (error) {
-        console.error("Error fetching AI-modified recipe:", error);
-        alert("Failed to fetch AI-modified recipe. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error in handleFullRecipeAI: ", error);
+    if (!aiMode || !recipe || !userInput.trim()) {
+      return
     }
-  };
+
+    setAiLoading(true)
+
+    try {
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "recipe",
+          recipe: {
+            name: recipe.name,
+            prepTime: recipe.prepTime,
+            cookTime: recipe.cookTime,
+            servings: recipe.servings,
+            ingredients: recipe.ingredients,
+            steps: recipe.steps,
+          },
+          userInput: userInput.trim(),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`)
+      }
+
+      const responseJson = await response.json()
+      setAiGeneratedRecipe(responseJson)
+      setShowPopup(true)
+      setHasGeneratedRecipe(true)
+    } catch (error) {
+      console.error("Error fetching AI-modified recipe:", error)
+      alert("Failed to fetch AI-modified recipe. Please try again.")
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   const handleReplaceRecipe = async () => {
     if (!recipe || !recipe.id || !aiGeneratedRecipe) {
-      alert("No AI-suggested recipe available to replace.");
-      return;
+      alert("No AI-suggested recipe available to replace.")
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     try {
-      const recipeRef = doc(db, "recipes", recipe.id);
+      const recipeRef = doc(db, "recipes", recipe.id)
       await updateDoc(recipeRef, {
         name: aiGeneratedRecipe.name,
         prepTime: aiGeneratedRecipe.prepTime,
@@ -159,207 +149,282 @@ export default function RecipeDetails() {
         servings: aiGeneratedRecipe.servings,
         ingredients: aiGeneratedRecipe.ingredients,
         steps: aiGeneratedRecipe.steps,
-      });
+      })
 
-      setRecipe(aiGeneratedRecipe); // Update the state with the new recipe
-      alert("Recipe replaced successfully!");
-      setShowPopup(false);
+      setRecipe(aiGeneratedRecipe)
+      alert("Recipe replaced successfully!")
+      setShowPopup(false)
+      setHasGeneratedRecipe(false)
     } catch (error) {
-      console.error("Error updating recipe:", error);
-      alert("Failed to update recipe.");
+      console.error("Error updating recipe:", error)
+      alert("Failed to update recipe.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  if (loading) return <p>Loading recipe...</p>;
+  const handleViewAiRecipe = () => {
+    if (aiGeneratedRecipe) {
+      setShowPopup(true)
+    }
+  }
 
-  if (!recipe) return <p>Recipe not found.</p>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading recipe...</p>
+      </div>
+    )
+  }
 
-  
+  if (!recipe) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Recipe not found.</p>
+      </div>
+    )
+  }
 
   return (
-    <main className="main">
-      <div className="main_container">
-        <h1 className="appName">ReciPal</h1>
-        <div>
-          <Navbar />
-        </div>
+    <main className="min-h-screen bg-cream-50">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-5xl font-bold text-strawberry-500 mb-6 drop-shadow-md">ReciPal</h1>
 
-        <h1 className="showName">{recipe.name}</h1>
+        <Navbar />
 
-        <div className="show_prepTime">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor">
-                <path d="M13.7678 12.2288L15.8892 14.3501C11.293 18.9463 5.63612 20.3605 2.10059 19.6534L17.6569 4.09705L19.7783 6.21837L13.7678 12.2288Z"></path>
-            </svg>
-            <b>Prep Time: </b>
-            <div>
-              <p className="pTime">{recipe.prepTime}</p>
+        <div className="mt-8">
+          <Button
+            variant="ghost"
+            className="mb-4 flex items-center gap-2 text-crust-600 hover:text-strawberry-500"
+            onClick={() => router.push("/recipes_view")}
+          >
+            <ChevronLeft size={16} />
+            Back to Recipes
+          </Button>
+
+          <div className="recipe-header mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+              <h2 className="text-3xl font-bold text-strawberry-600">{recipe.name}</h2>
+              <div className="flex gap-2 mt-4 md:mt-0">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => router.push(`/recipe_edit/${recipe.id}`)}
+                  className="border-strawberry-200 text-strawberry-500 hover:bg-strawberry-50"
+                >
+                  <Edit size={16} />
+                  <span className="sr-only">Edit</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleDelete}
+                  className="border-strawberry-200 text-strawberry-500 hover:bg-strawberry-50"
+                >
+                  <Trash2 size={16} />
+                  <span className="sr-only">Delete</span>
+                </Button>
+              </div>
             </div>
-            <p>minutes</p>
-        </div>
-        <div className="show_cookTime">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h20"></path><path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"></path><path d="m4 8 16-4"></path><path d="m8.86 6.78-.45-1.81a2 2 0 0 1 1.45-2.43l1.94-.48a2 2 0 0 1 2.43 1.46l.45 1.8"></path></svg>
-            <b>Cook Time: </b>
-            <div>
-              <p className="cTime">{recipe.cookTime}</p>
-            </div>
-            <p>minutes</p>    
-        </div>
-        <div className="show_servings">
-          <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8.597 3.2A1 1 0 0 0 7.04 4.289a3.49 3.49 0 0 1 .057 1.795 3.448 3.448 0 0 1-.84 1.575.999.999 0 0 0-.077.094c-.596.817-3.96 5.6-.941 10.762l.03.049a7.73 7.73 0 0 0 2.917 2.602 7.617 7.617 0 0 0 3.772.829 8.06 8.06 0 0 0 3.986-.975 8.185 8.185 0 0 0 3.04-2.864c1.301-2.2 1.184-4.556.588-6.441-.583-1.848-1.68-3.414-2.607-4.102a1 1 0 0 0-1.594.757c-.067 1.431-.363 2.551-.794 3.431-.222-2.407-1.127-4.196-2.224-5.524-1.147-1.39-2.564-2.3-3.323-2.788a8.487 8.487 0 0 1-.432-.287Z"/>
-          </svg>
-          <b>Servings: </b>
-          <div>
-            <p className="serv">{recipe.servings}</p>
           </div>
-          <p>servings</p>
-        </div> 
-        
-        <div className="details">
-          <div className="ingredients">
-            <b className="showIhead">Ingredients</b>
-            <div className="ai-actions">
-              <button onClick={() => {
-                console.log("AI Mode button clicked");
-                setAiMode(!aiMode);
-              }}>
-                {aiMode ? "Disable AI Mode" : "Enable AI Mode"}
-              </button>
 
-              {aiMode && (
-                <div className="ai-input-container">
-                  <textarea
-                    placeholder="Enter your dietary restrictions or preferences..."
+          <Card className="mb-8 border-strawberry-200 bg-white shadow-md">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-strawberry-500" />
+                  <div>
+                    <p className="text-sm text-crust-500">Prep Time</p>
+                    <p className="font-medium text-crust-700">{recipe.prepTime} minutes</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-strawberry-500" />
+                  <div>
+                    <p className="text-sm text-crust-500">Cook Time</p>
+                    <p className="font-medium text-crust-700">{recipe.cookTime} minutes</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-strawberry-500" />
+                  <div>
+                    <p className="text-sm text-crust-500">Servings</p>
+                    <p className="font-medium text-crust-700">{recipe.servings}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-strawberry-600">Ingredients</h3>
+              <Button
+                variant={aiMode ? "default" : "outline"}
+                onClick={() => setAiMode(!aiMode)}
+                className={`flex items-center gap-2 ${aiMode ? "bg-strawberry-500 hover:bg-strawberry-600" : "border-strawberry-200 text-strawberry-500 hover:bg-strawberry-50"}`}
+              >
+                <Sparkles size={16} />
+                {aiMode ? "Disable AI Mode" : "Enable AI Mode"}
+              </Button>
+            </div>
+
+            {aiMode && (
+              <Card className="mb-4 border-strawberry-200 bg-white shadow-md">
+                <CardContent className="pt-6">
+                  <p className="mb-2 text-sm text-crust-600">
+                    Enter your dietary restrictions or preferences to get an AI-modified version of this recipe:
+                  </p>
+                  <Textarea
+                    placeholder="E.g., vegan, gluten-free, low-carb, etc."
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
+                    className="mb-4 border-crust-200 focus:border-strawberry-400"
                   />
-                  <button onClick={() => {
-                    console.log("Get AI Suggestions button clicked");
-                    handleFullRecipeAI();
-                  }}>Get AI Suggestions</button>
-                </div>
-              )}
-              {showPopup && aiGeneratedRecipe && (
-                <div className="popUp">
-                  <div className = "popContent">
-                    <h2 className="AItitle">AI Generated Recipe</h2>
-                    <h3>{aiGeneratedRecipe.name}</h3>
-                    <p><b>Prep Time: </b> {aiGeneratedRecipe.prepTime} <b> minutes</b></p>
-                    <p><b>Cook Time: </b> {aiGeneratedRecipe.cookTime} <b> minutes</b></p>
-                    <p><b>Servings: </b> {aiGeneratedRecipe.servings} <b> servings</b></p>
-                    <h4>Ingredients: </h4>
-                    <ul>
-                      {aiGeneratedRecipe.ingredients?.map((item: { ingredient: string; quantity: number; unit: string }, index: number) => (
-                        <li key={index}>
-                          {item.quantity} {item.unit} {item.ingredient}
-                        </li>
-                      ))}
-                    </ul>
-                    <h4>Steps: </h4>
-                    <ol>
-                      {aiGeneratedRecipe.steps?.map((step: { stepDesc: string }, index: number) => (
-                        <li key={index}>
-                          {step.stepDesc}
-                        </li>
-                      ))}
-                    </ol>
-                    <div className="popButtons">
-                      <button onClick={() => {
-                        console.log("Replace Recipe button clicked");
-                        handleReplaceRecipe();
-                      }}>Replace Recipe</button>
-                      <button onClick={() => {
-                        console.log("Close Popup button clicked");
-                        setShowPopup(false);
-                      }}>Close</button>
-                    </div>
-                  </div>
-                </div>    
-            )}
-            {!showPopup && aiGeneratedRecipe && (
-              <button onClick={() => setShowPopup(true)}>Reopen AI Generated Recipe</button>
-            )}
-            </div>
+                  <div className="space-y-3">
+                    <Button
+                      onClick={handleFullRecipeAI}
+                      disabled={aiLoading || !userInput.trim()}
+                      className="w-full bg-strawberry-500 hover:bg-strawberry-600"
+                    >
+                      {aiLoading ? "Generating..." : "Get AI Suggestions"}
+                    </Button>
 
-            <div className="IngList">
-              <table className="ingTable">
-                  <thead>
-                      <tr>
-                          <th className="qh">Quantity</th>
-                          <th className="uh">Unit</th>
-                          <th className="ih">Ingredient</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                  {recipe.ingredients?.map((item: { ingredient: string; quantity: number; unit: string }, index: number) => (
-                          <tr key={index}>
-                              <td className="showQuantity">
-                                  {item.quantity}
-                              </td>
-                              <td className="showUnit">
-                                  {item.unit}
-                              </td>
-                              <td className="showIng">
-                                  {item.ingredient}
-                              </td>
-                          </tr>
-                      ))}
-                  </tbody>
-              </table>
+                    {hasGeneratedRecipe && !showPopup && (
+                      <Button
+                        onClick={handleViewAiRecipe}
+                        className="w-full border-strawberry-200 bg-cream-50 text-strawberry-500 hover:bg-cream-100 flex items-center justify-center gap-2"
+                      >
+                        <Eye size={16} />
+                        View AI Recipe
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="bg-white rounded-lg border border-strawberry-200 shadow-md overflow-hidden">
+              <Table>
+                <TableHeader className="bg-cream-100">
+                  <TableRow>
+                    <TableHead className="w-[100px] text-crust-600">Quantity</TableHead>
+                    <TableHead className="w-[150px] text-crust-600">Unit</TableHead>
+                    <TableHead className="text-crust-600">Ingredient</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recipe.ingredients?.map(
+                    (item: { ingredient: string; quantity: number; unit: string }, index: number) => (
+                      <TableRow key={index} className={index % 2 === 0 ? "bg-white" : "bg-cream-50"}>
+                        <TableCell className="font-medium text-crust-700">{item.quantity}</TableCell>
+                        <TableCell className="text-crust-600">{item.unit}</TableCell>
+                        <TableCell className="text-crust-700">{item.ingredient}</TableCell>
+                      </TableRow>
+                    ),
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </div>
-        </div>  
-        
-        
-        
-        <div className="steps">
-            <b className="showShead">Steps</b>
-        <div className="step_list">
-        <table className="stepTable">
-          <thead>
-            <tr>
-              <th className="stepH">Step</th>
-              <th className="stepDH">Description</th>
 
-            </tr>
-          </thead>
-          <tbody>  
-          {recipe.steps?.map((step: {stepNo: number; stepDesc: string}, index: number) => (
-            <tr key={index}>
-              <td className="showNo">{step.stepNo}</td>
-              <td className="showDesc">{step.stepDesc}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </div>
-      </div>
-
-      <div className="buttons">
-              <button className="homeBtn" onClick={() => router.push("/recipes_view")}>
-                <svg className="svgIcon" viewBox="0 0 384 512">
-                  <path
-                    d="M214.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 141.2V448c0 17.7 14.3 32 32 32s32-14.3 32-32V141.2L329.4 246.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z"
-                  ></path>
-                </svg>
-              </button>
-
-              <button className="editBtn" onClick={() => router.push(`/recipe_edit/${recipe.id}`)}>
-                <svg className="edit-svgIcon" viewBox="0 0 512 512">
-                    <path d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"></path>
-                </svg>
-              </button>
-
-              <button className="deleteBtn" onClick={handleDelete}>
-                <svg viewBox="0 0 448 512" className="svgIcon"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path></svg> 
-              </button>
-
-
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-strawberry-600 mb-4">Steps</h3>
+            <div className="bg-white rounded-lg border border-strawberry-200 shadow-md overflow-hidden">
+              <Table>
+                <TableHeader className="bg-cream-100">
+                  <TableRow>
+                    <TableHead className="w-[80px] text-crust-600">Step</TableHead>
+                    <TableHead className="text-crust-600">Description</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recipe.steps?.map((step: { stepNo: number; stepDesc: string }, index: number) => (
+                    <TableRow key={index} className={index % 2 === 0 ? "bg-white" : "bg-cream-50"}>
+                      <TableCell className="font-medium text-strawberry-500">{step.stepNo}</TableCell>
+                      <TableCell className="text-crust-700">{step.stepDesc}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </div>
       </div>
-      
+
+      <Dialog open={showPopup} onOpenChange={setShowPopup}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto border-strawberry-200">
+          <DialogHeader className="bg-cream-50 -mx-6 -mt-6 p-6 border-b border-strawberry-100">
+            <DialogTitle className="text-strawberry-600">AI Generated Recipe</DialogTitle>
+            <DialogDescription className="text-crust-500">
+              Based on your preferences, here&apos;s a modified version of your recipe
+            </DialogDescription>
+
+          </DialogHeader>
+
+          {aiGeneratedRecipe && (
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-strawberry-600">{aiGeneratedRecipe.name}</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-cream-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-strawberry-500" />
+                  <div>
+                    <p className="text-sm text-crust-500">Prep Time</p>
+                    <p className="font-medium text-crust-700">{aiGeneratedRecipe.prepTime} minutes</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-strawberry-500" />
+                  <div>
+                    <p className="text-sm text-crust-500">Cook Time</p>
+                    <p className="font-medium text-crust-700">{aiGeneratedRecipe.cookTime} minutes</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-strawberry-500" />
+                  <div>
+                    <p className="text-sm text-crust-500">Servings</p>
+                    <p className="font-medium text-crust-700">{aiGeneratedRecipe.servings}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border border-strawberry-100 rounded-lg p-4">
+                <h4 className="font-medium mb-2 text-strawberry-600">Ingredients:</h4>
+                <ul className="list-disc pl-5 space-y-1 text-crust-700">
+                  {aiGeneratedRecipe.ingredients?.map(
+                    (item: { ingredient: string; quantity: number; unit: string }, index: number) => (
+                      <li key={index}>
+                        {item.quantity} {item.unit} {item.ingredient}
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </div>
+
+              <div className="border border-strawberry-100 rounded-lg p-4">
+                <h4 className="font-medium mb-2 text-strawberry-600">Steps:</h4>
+                <ol className="list-decimal pl-5 space-y-2 text-crust-700">
+                  {aiGeneratedRecipe.steps?.map((step: { stepDesc: string }, index: number) => (
+                    <li key={index}>{step.stepDesc}</li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="bg-cream-50 -mx-6 -mb-6 p-6 border-t border-strawberry-100 mt-4">
+            <Button variant="outline" onClick={() => setShowPopup(false)} className="border-crust-200 text-crust-600">
+              Cancel
+            </Button>
+            <Button onClick={handleReplaceRecipe} className="bg-strawberry-500 hover:bg-strawberry-600">
+              Replace Recipe
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
-  );
+  )
 }
+

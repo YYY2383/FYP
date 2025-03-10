@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server";
 
+export const config = {
+  runtime: "edge", // Enables Vercel Edge Functions (30s timeout)
+};
+
 export async function POST(request) {
   try {
     const { type, ingredient, recipe, userInput } = await request.json();
     console.log("Received request with data:", { type, ingredient, recipe, userInput });
-    console.log("API Key:", process.env.DEEPSEEK_API_KEY);
-
-    if (!type) {
-      return NextResponse.json({ error: "Type is required" }, { status: 400 });
-    }
 
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
-      throw new Error("API key is missing");
+      return NextResponse.json({ error: "API key is missing" }, { status: 500 });
+    }
+
+    if (!type) {
+      return NextResponse.json({ error: "Type is required" }, { status: 400 });
     }
 
     let prompt = "";
@@ -21,7 +24,7 @@ export async function POST(request) {
       prompt = `Modify the following recipe to fit the user's dietary restrictions: ${userInput}. 
       Ensure the output is JSON and includes:
       - "name": Recipe name
-      -"prepTime": Preparation time
+      - "prepTime": Preparation time
       - "cookTime": Cooking time
       - "servings": Number of servings
       - "ingredients": A list of ingredients with correct measurements
@@ -29,24 +32,12 @@ export async function POST(request) {
       Original Recipe: ${JSON.stringify(recipe)}.
       Return only valid JSON.`;
     } else {
-      throw new Error("Invalid type");
+      return NextResponse.json({ error: "Invalid type" }, { status: 400 });
     }
 
     const explanation = await generateAIResponse(prompt, apiKey);
 
-    if (type === "recipe") {
-      try {
-        return NextResponse.json(explanation); // No need to parse again
-      } catch (error) {
-        console.error("Error in API route:", error);
-        return NextResponse.json({ error: "Invalid AI response format" }, { status: 500 });
-      }
-    }
-
-    return NextResponse.json({
-      name: type === "ingredient" ? ingredient : recipe.name,
-      explanation,
-    });
+    return NextResponse.json(explanation);
   } catch (error) {
     console.error("Error generating AI response:", error);
     return NextResponse.json({ error: "Failed to fetch details" }, { status: 500 });
@@ -54,8 +45,6 @@ export async function POST(request) {
 }
 
 async function generateAIResponse(prompt, apiKey) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
   const maxRetries = 3;
   let attempt = 0;
 
@@ -73,39 +62,28 @@ async function generateAIResponse(prompt, apiKey) {
             {
               role: "system",
               content: `You are an expert AI chef. Your task is to modify recipes based on dietary restrictions.  
-              Respond **only** with a valid JSON object containing the following fields:
-              - **name** (string) - Name of the recipe  
-              - **prepTime** (integer) - Preparation time (e.g., "15")  
-              - **cookTime** (integer) - Cooking time (e.g., "30")  
-              - **servings** (integer) - Number of servings  
-              - **ingredients** (array of objects) - Each object contains:
-                - **quantity** (string) - Amount of the ingredient  
-                - **ingredient** (string) - Name of the ingredient  
-                - **unit** (string) - Measurement unit (optional)  
-              - **steps** (array of objects) - Each object contains:
-                - **stepNo** (integer) - Step number  
-                - **stepDesc** (string) - Description of the step  
-
+              Respond **only** with a valid JSON object containing:
+              - "name" (string) - Recipe name  
+              - "prepTime" (integer) - Preparation time  
+              - "cookTime" (integer) - Cooking time  
+              - "servings" (integer) - Number of servings  
+              - "ingredients" (array of objects): Each contains "quantity" (string), "ingredient" (string), "unit" (optional)  
+              - "steps" (array of objects): Each contains "stepNo" (integer), "stepDesc" (string)  
+              
               **DO NOT** include markdown, explanations, or extra text.  
               **ONLY return raw JSON.**`,
             },
-            {
-              role: "user",
-              content: prompt,
-            },
+            { role: "user", content: prompt },
           ],
           temperature: 0.7,
           max_tokens: 2000,
         }),
-        signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorDetails = await response.json();
         console.error("API Error Response:", errorDetails);
-        throw new Error(`API Error: ${response.status} ${response.statusText} - ${JSON.stringify(errorDetails)}`);
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -115,33 +93,22 @@ async function generateAIResponse(prompt, apiKey) {
         throw new Error("Invalid API response: No choices returned");
       }
 
-      const message = data.choices[0]?.message;
-      if (!message || !message.content) {
-        console.error("Invalid API response: Missing 'message.content'", data);
+      const aiResponse = data.choices[0]?.message?.content?.trim();
+      if (!aiResponse) {
         throw new Error("AI response is missing expected content");
       }
 
-      let aiResponse = message.content.trim();
-      aiResponse = aiResponse.replace(/```json/g, "").replace(/```/g, "").trim();
-      console.log("Cleaned API Response:", aiResponse);
+      const cleanedResponse = aiResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+      console.log("Cleaned API Response:", cleanedResponse);
 
-      let parsedResponse;
-      try {
-        parsedResponse = JSON.parse(aiResponse);
-        console.log("Parsed AI Response:", parsedResponse);
-      } catch (parseError) {
-        console.error("Error parsing AI response:", parseError, "Response:", aiResponse);
-        throw new Error("AI response is not valid JSON");
-      }
+      let parsedResponse = JSON.parse(cleanedResponse);
+      console.log("Parsed AI Response:", parsedResponse);
 
-      // Ensure AI response has required fields
       const requiredFields = ["name", "prepTime", "cookTime", "servings", "ingredients", "steps"];
-      const missingFields = requiredFields.filter(field => parsedResponse[field] === undefined || parsedResponse[field] === null);
+      const missingFields = requiredFields.filter(field => parsedResponse[field] === undefined);
 
       if (missingFields.length > 0) {
-        console.error("Missing required fields in AI response:", missingFields, parsedResponse);
-        console.log("Full AI Response:", parsedResponse); // Log the full response for debugging
-        throw new Error(`Invalid AI response format: Missing fields - ${missingFields.join(", ")}`);
+        throw new Error(`Invalid AI response: Missing fields - ${missingFields.join(", ")}`);
       }
 
       return parsedResponse;

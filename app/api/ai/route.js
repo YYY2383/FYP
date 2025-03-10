@@ -125,11 +125,14 @@ async function generateAIResponse(prompt, apiKey) {
       throw new Error("AI response is not valid JSON");
     }
 
-    // **Ensure AI response has required fields**
-    if (!parsedResponse.name || !parsedResponse.ingredients || !parsedResponse.steps ||
-        !parsedResponse.prepTime || !parsedResponse.cookTime || !parsedResponse.servings) {
-      console.error("Missing required fields in AI response:", parsedResponse);
-      throw new Error("Invalid AI response format");
+    // Ensure AI response has required fields
+    const requiredFields = ["name", "prepTime", "cookTime", "servings", "ingredients", "steps"];
+    const missingFields = requiredFields.filter(field => parsedResponse[field] === undefined || parsedResponse[field] === null);
+
+    if (missingFields.length > 0) {
+      console.error("Missing required fields in AI response:", missingFields, parsedResponse);
+      console.log("Full AI Response:", parsedResponse); // Log the full response for debugging
+      throw new Error(`Invalid AI response format: Missing fields - ${missingFields.join(", ")}`);
     }
 
     return parsedResponse;

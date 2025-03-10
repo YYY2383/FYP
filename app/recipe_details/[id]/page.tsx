@@ -34,42 +34,44 @@ export default function RecipeDetails() {
   const [hasGeneratedRecipe, setHasGeneratedRecipe] = useState(false)
 
   useEffect(() => {
-    const fetchRecipe = async () => {
-      const recipeId = params?.id as string
-      if (!recipeId) return
+    if (typeof window !== 'undefined') {
+      const fetchRecipe = async () => {
+        const recipeId = params?.id as string
+        if (!recipeId) return
 
-      const auth = getAuth()
-      const user = auth.currentUser
+        const auth = getAuth()
+        const user = auth.currentUser
 
-      if (!user) {
-        router.push("/")
-        return
-      }
-
-      try {
-        const docRef = doc(db, "recipes", recipeId)
-        const docSnap = await getDoc(docRef)
-
-        if (docSnap.exists()) {
-          const fetchedRecipe = { id: docSnap.id, userId: docSnap.data().userId, ...docSnap.data() }
-          if (fetchedRecipe.userId !== user.uid) {
-            router.push("/recipes_view")
-            return
-          }
-
-          setRecipe(fetchedRecipe)
-        } else {
-          console.log("Recipe not found")
-          router.push("/recipes_view")
+        if (!user) {
+          router.push("/")
+          return
         }
-      } catch (error) {
-        console.error("Error fetching recipe:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
 
-    fetchRecipe()
+        try {
+          const docRef = doc(db, "recipes", recipeId)
+          const docSnap = await getDoc(docRef)
+
+          if (docSnap.exists()) {
+            const fetchedRecipe = { id: docSnap.id, userId: docSnap.data().userId, ...docSnap.data() }
+            if (fetchedRecipe.userId !== user.uid) {
+              router.push("/recipes_view")
+              return
+            }
+
+            setRecipe(fetchedRecipe)
+          } else {
+            console.log("Recipe not found")
+            router.push("/recipes_view")
+          }
+        } catch (error) {
+          console.error("Error fetching recipe:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      fetchRecipe()
+    }
   }, [params, router])
 
   const handleDelete = async () => {

@@ -75,8 +75,8 @@ async function generateAIResponse(prompt, apiKey) {
             },
             { role: "user", content: prompt },
           ],
-          temperature: 0.7,
-          max_tokens: 2000,
+          temperature: 0.5,
+          max_tokens: 1000,
         }),
       });
 

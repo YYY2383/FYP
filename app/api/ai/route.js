@@ -55,95 +55,102 @@ export async function POST(request) {
 
 async function generateAIResponse(prompt, apiKey) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds timeout
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+  const maxRetries = 3;
+  let attempt = 0;
 
-  try {
-    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert AI chef. Your task is to modify recipes based on dietary restrictions.  
-            Respond **only** with a valid JSON object containing the following fields:
-            - **name** (string) - Name of the recipe  
-            - **prepTime** (integer) - Preparation time (e.g., "15")  
-            - **cookTime** (integer) - Cooking time (e.g., "30")  
-            - **servings** (integer) - Number of servings  
-            - **ingredients** (array of objects) - Each object contains:
-              - **quantity** (string) - Amount of the ingredient  
-              - **ingredient** (string) - Name of the ingredient  
-              - **unit** (string) - Measurement unit (optional)  
-            - **steps** (array of objects) - Each object contains:
-              - **stepNo** (integer) - Step number  
-              - **stepDesc** (string) - Description of the step  
-
-            **DO NOT** include markdown, explanations, or extra text.  
-            **ONLY return raw JSON.**`,
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorDetails = await response.json();
-      console.error("API Error Response:", errorDetails);
-      throw new Error(`API Error: ${response.status} ${response.statusText} - ${JSON.stringify(errorDetails)}`);
-    }
-
-    const data = await response.json();
-    console.log("Raw AI Response:", data);
-
-    if (!data.choices || data.choices.length === 0) {
-      throw new Error("Invalid API response: No choices returned");
-    }
-
-    const message = data.choices[0]?.message;
-    if (!message || !message.content) {
-      console.error("Invalid API response: Missing 'message.content'", data);
-      throw new Error("AI response is missing expected content");
-    }
-
-    let aiResponse = message.content.trim();
-    aiResponse = aiResponse.replace(/```json/g, "").replace(/```/g, "").trim();
-    console.log("Cleaned API Response:", aiResponse);
-
-    let parsedResponse;
+  while (attempt < maxRetries) {
     try {
-      parsedResponse = JSON.parse(aiResponse);
-      console.log("Parsed AI Response:", parsedResponse);
-    } catch (parseError) {
-      console.error("Error parsing AI response:", parseError, "Response:", aiResponse);
-      throw new Error("AI response is not valid JSON");
+      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert AI chef. Your task is to modify recipes based on dietary restrictions.  
+              Respond **only** with a valid JSON object containing the following fields:
+              - **name** (string) - Name of the recipe  
+              - **prepTime** (integer) - Preparation time (e.g., "15")  
+              - **cookTime** (integer) - Cooking time (e.g., "30")  
+              - **servings** (integer) - Number of servings  
+              - **ingredients** (array of objects) - Each object contains:
+                - **quantity** (string) - Amount of the ingredient  
+                - **ingredient** (string) - Name of the ingredient  
+                - **unit** (string) - Measurement unit (optional)  
+              - **steps** (array of objects) - Each object contains:
+                - **stepNo** (integer) - Step number  
+                - **stepDesc** (string) - Description of the step  
+
+              **DO NOT** include markdown, explanations, or extra text.  
+              **ONLY return raw JSON.**`,
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorDetails = await response.json();
+        console.error("API Error Response:", errorDetails);
+        throw new Error(`API Error: ${response.status} ${response.statusText} - ${JSON.stringify(errorDetails)}`);
+      }
+
+      const data = await response.json();
+      console.log("Raw AI Response:", data);
+
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error("Invalid API response: No choices returned");
+      }
+
+      const message = data.choices[0]?.message;
+      if (!message || !message.content) {
+        console.error("Invalid API response: Missing 'message.content'", data);
+        throw new Error("AI response is missing expected content");
+      }
+
+      let aiResponse = message.content.trim();
+      aiResponse = aiResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+      console.log("Cleaned API Response:", aiResponse);
+
+      let parsedResponse;
+      try {
+        parsedResponse = JSON.parse(aiResponse);
+        console.log("Parsed AI Response:", parsedResponse);
+      } catch (parseError) {
+        console.error("Error parsing AI response:", parseError, "Response:", aiResponse);
+        throw new Error("AI response is not valid JSON");
+      }
+
+      // Ensure AI response has required fields
+      const requiredFields = ["name", "prepTime", "cookTime", "servings", "ingredients", "steps"];
+      const missingFields = requiredFields.filter(field => parsedResponse[field] === undefined || parsedResponse[field] === null);
+
+      if (missingFields.length > 0) {
+        console.error("Missing required fields in AI response:", missingFields, parsedResponse);
+        console.log("Full AI Response:", parsedResponse); // Log the full response for debugging
+        throw new Error(`Invalid AI response format: Missing fields - ${missingFields.join(", ")}`);
+      }
+
+      return parsedResponse;
+    } catch (error) {
+      console.error(`Error in generateAIResponse (attempt ${attempt + 1}):`, error);
+      attempt++;
+      if (attempt >= maxRetries) {
+        throw error;
+      }
     }
-
-    // Ensure AI response has required fields
-    const requiredFields = ["name", "prepTime", "cookTime", "servings", "ingredients", "steps"];
-    const missingFields = requiredFields.filter(field => parsedResponse[field] === undefined || parsedResponse[field] === null);
-
-    if (missingFields.length > 0) {
-      console.error("Missing required fields in AI response:", missingFields, parsedResponse);
-      console.log("Full AI Response:", parsedResponse); // Log the full response for debugging
-      throw new Error(`Invalid AI response format: Missing fields - ${missingFields.join(", ")}`);
-    }
-
-    return parsedResponse;
-  } catch (error) {
-    console.error("Error in generateAIResponse:", error);
-    throw error;
   }
 }

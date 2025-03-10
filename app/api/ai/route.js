@@ -54,6 +54,9 @@ export async function POST(request) {
 }
 
 async function generateAIResponse(prompt, apiKey) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds timeout
+
   try {
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
@@ -91,7 +94,10 @@ async function generateAIResponse(prompt, apiKey) {
         temperature: 0.7,
         max_tokens: 2000,
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorDetails = await response.json();

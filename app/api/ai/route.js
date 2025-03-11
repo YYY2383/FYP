@@ -77,6 +77,7 @@ async function generateAIResponse(prompt, apiKey) {
           ],
           temperature: 0.5,
           max_tokens: 1000,
+          stream: true, // Enable streaming
         }),
       });
 
@@ -86,17 +87,17 @@ async function generateAIResponse(prompt, apiKey) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
-      console.log("Raw AI Response:", data);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiResponse = "";
 
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error("Invalid API response: No choices returned");
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        aiResponse += decoder.decode(value, { stream: true });
       }
 
-      const aiResponse = data.choices[0]?.message?.content?.trim();
-      if (!aiResponse) {
-        throw new Error("AI response is missing expected content");
-      }
+      console.log("Raw AI Response:", aiResponse);
 
       const cleanedResponse = aiResponse.replace(/```json/g, "").replace(/```/g, "").trim();
       console.log("Cleaned API Response:", cleanedResponse);

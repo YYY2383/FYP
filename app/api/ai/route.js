@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const config = {
-  runtime: "edge", // Enables Vercel Edge Functions (30s timeout)
+  runtime: "edge", // Enables Vercel Edge Functions (60s timeout)
 };
 
 export async function POST(request) {
@@ -11,10 +11,12 @@ export async function POST(request) {
 
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
+      console.error("API key is missing");
       return NextResponse.json({ error: "API key is missing" }, { status: 500 });
     }
 
     if (!type) {
+      console.error("Type is required");
       return NextResponse.json({ error: "Type is required" }, { status: 400 });
     }
 
@@ -32,6 +34,7 @@ export async function POST(request) {
       Original Recipe: ${JSON.stringify(recipe)}.
       Return only valid JSON.`;
     } else {
+      console.error("Invalid type");
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });
     }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const config = {
-  runtime: "edge", // Enables Vercel Edge Functions (60s timeout)
+  runtime: "edge", // Enables Vercel Edge Functions (30s timeout)
 };
 
 export async function POST(request) {
@@ -11,12 +11,10 @@ export async function POST(request) {
 
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
-      console.error("API key is missing");
       return NextResponse.json({ error: "API key is missing" }, { status: 500 });
     }
 
     if (!type) {
-      console.error("Type is required");
       return NextResponse.json({ error: "Type is required" }, { status: 400 });
     }
 
@@ -34,7 +32,6 @@ export async function POST(request) {
       Original Recipe: ${JSON.stringify(recipe)}.
       Return only valid JSON.`;
     } else {
-      console.error("Invalid type");
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });
     }
 
@@ -78,9 +75,8 @@ async function generateAIResponse(prompt, apiKey) {
             },
             { role: "user", content: prompt },
           ],
-          temperature: 0.5,
-          max_tokens: 1000,
-          stream: true, // Enable streaming
+          temperature: 0.7,
+          max_tokens: 2000,
         }),
       });
 
@@ -90,17 +86,17 @@ async function generateAIResponse(prompt, apiKey) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let aiResponse = "";
+      const data = await response.json();
+      console.log("Raw AI Response:", data);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        aiResponse += decoder.decode(value, { stream: true });
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error("Invalid API response: No choices returned");
       }
 
-      console.log("Raw AI Response:", aiResponse);
+      const aiResponse = data.choices[0]?.message?.content?.trim();
+      if (!aiResponse) {
+        throw new Error("AI response is missing expected content");
+      }
 
       const cleanedResponse = aiResponse.replace(/```json/g, "").replace(/```/g, "").trim();
       console.log("Cleaned API Response:", cleanedResponse);

@@ -171,11 +171,15 @@ export default function RecipesView() {
                     <div className="flex flex-col gap-3 text-sm">
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-crust-400" />
-                        <span className="text-crust-600">Prep: {recipe.prepTime} min</span>
+                        <span className="text-crust-600">Prep Time: {recipe.prepTime} min</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-crust-400" />
-                        <span className="text-crust-600">Cook: {recipe.cookTime} min</span>
+                        <span className="text-crust-600">Cook Time: {recipe.cookTime} min</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-crust-400" />
+                        <span className="text-crust-600">Total Time: {recipe.prepTime + recipe.cookTime} min</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-crust-400" />

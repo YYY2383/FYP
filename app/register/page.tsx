@@ -49,7 +49,7 @@ export default function Register() {
       })
 
       // Redirect to home page
-      router.push("/")
+      router.push("/dietary_restrictions")
     } catch (error: any) {
       console.error("Error signing up:", error.message)
       setError(error.message)

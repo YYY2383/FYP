@@ -190,6 +190,40 @@ export default function RecipeDetails() {
     return Number.parseFloat((originalQuantity * (adjustedServings / recipe.servings)).toFixed(2))
   }
 
+  const handleFetchDietaryRestrictions = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      alert("User not logged in.");
+      return;
+    }
+
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        console.log("User data:", userData);
+        const dietaryRestrictions = userData.dietaryRestrictions || [];
+
+        if (Array.isArray(dietaryRestrictions) && dietaryRestrictions.length > 0) {
+          const dietaryRestrictionsString = dietaryRestrictions.join(", ");
+          setUserInput(dietaryRestrictionsString);
+          handleFullRecipeAI();
+        } else {
+          alert("No dietary restrictions found in your account.");
+        }
+      } else {
+        alert("User data not found.");
+      }
+    } catch (error) {
+      console.error("Error fetching dietary restrictions:", error);
+      alert("Failed to fetch dietary restrictions. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -271,7 +305,7 @@ export default function RecipeDetails() {
                     <Clock className="h-5 w-5 text-strawberry-500" />
                     <div>
                       <p className="text-sm text-crust-500">Total Time</p>
-                      <p className="font-medium text-crust-700">{recipe.prepTime + recipe.cookTime} minutes</p>
+                      <p className="font-medium text-crust-700">{parseInt(recipe.prepTime) + parseInt(recipe.cookTime)} minutes</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -350,6 +384,13 @@ export default function RecipeDetails() {
                         className="w-full bg-strawberry-500 hover:bg-strawberry-600"
                       >
                         {aiLoading ? "Generating..." : "Get AI Suggestions"}
+                      </Button>
+                      <Button
+                        onClick={handleFetchDietaryRestrictions}
+                        disabled={aiLoading}
+                        className="w-full bg-strawberry-500 hover:bg-strawberry-600"
+                      >
+                        Use Saved Dietary Restrictions
                       </Button>
 
                       {hasGeneratedRecipe && !showPopup && (

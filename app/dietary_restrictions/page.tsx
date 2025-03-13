@@ -18,7 +18,7 @@ const dietaryRestrictions = [
   { id: "dairy-free", label: "Dairy-Free", description: "No milk, cheese, or dairy products" },
   { id: "nut-free", label: "Nut-Free", description: "No nuts or nut derivatives" },
   { id: "keto", label: "Keto", description: "Low carb, high fat" },
-  { id: "paleo", label: "Paleo", description: "Based on foods presumed to be available to paleolithic humans" },
+  { id: "low-sugar", label: "Low Sugar", description: "Reduced sugar consumption" },
   { id: "low-carb", label: "Low Carb", description: "Reduced carbohydrate consumption" },
   { id: "low-sodium", label: "Low Sodium", description: "Reduced salt consumption" },
   { id: "pescatarian", label: "Pescatarian", description: "Vegetarian plus seafood" },

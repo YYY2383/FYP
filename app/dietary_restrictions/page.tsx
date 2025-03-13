@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 
+// Options for dietary restrictions
 const dietaryRestrictions = [
   { id: "vegetarian", label: "Vegetarian", description: "No meat, fish, or poultry" },
   { id: "vegan", label: "Vegan", description: "No animal products" },
@@ -28,6 +29,8 @@ const dietaryRestrictions = [
 
 export default function DietaryRestrictions() {
   const router = useRouter()
+  const [customRestrictions, setCustomRestrictions] = useState<string[]>([])
+  const [customInput, setCustomInput] = useState("")
   const [selectedRestrictions, setSelectedRestrictions] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -41,7 +44,7 @@ export default function DietaryRestrictions() {
         // Check if user already has dietary restrictions set
         checkExistingPreferences(user.uid)
       } else {
-        // Redirect to login if not authenticated
+        // Redirect to login if user isnt correct
         router.push("/")
       }
     })
@@ -53,7 +56,9 @@ export default function DietaryRestrictions() {
     try {
       const userDoc = await getDoc(doc(db, "users", uid))
       if (userDoc.exists() && userDoc.data().dietaryRestrictions) {
-        setSelectedRestrictions(userDoc.data().dietaryRestrictions)
+        const { dietaryRestrictions, customRestrictions } = userDoc.data()
+        setSelectedRestrictions(dietaryRestrictions || [])
+        setCustomRestrictions(customRestrictions || [])
       }
     } catch (error) {
       console.error("Error checking existing preferences:", error)
@@ -70,6 +75,17 @@ export default function DietaryRestrictions() {
     })
   }
 
+  const addCustomRestriction = () => {
+    if (customInput.trim() && !customRestrictions.includes(customInput.trim())) {
+      setCustomRestrictions([...customRestrictions, customInput.trim()])
+      setCustomInput("")
+    }
+  }
+
+  const removeCustomRestriction = (restriction: string) => {
+    setCustomRestrictions(customRestrictions.filter((r) => r !== restriction))
+  }
+
   const handleSubmit = async () => {
     if (!userId) return
 
@@ -81,24 +97,24 @@ export default function DietaryRestrictions() {
       const userDoc = await getDoc(userRef)
 
       if (userDoc.exists()) {
-        // Update existing user document
+        // Update database for dietary restrictions
         await setDoc(
           userRef,
           {
             ...userDoc.data(),
             dietaryRestrictions: selectedRestrictions,
+            customRestrictions: customRestrictions,
           },
           { merge: true },
         )
       } else {
-        // Create new user document if it doesn't exist
         await setDoc(userRef, {
           dietaryRestrictions: selectedRestrictions,
+          customRestrictions: customRestrictions,
           createdAt: new Date(),
         })
       }
 
-      // Redirect to recipes view
       router.push("/recipes_view")
     } catch (error: any) {
       console.error("Error saving preferences:", error)
@@ -147,6 +163,18 @@ export default function DietaryRestrictions() {
                     <div className="text-xs mt-1 opacity-80">{restriction.description}</div>
                   </div>
                 </Button>
+              ))}
+            </div>
+            <div className="flex gap-2 mb-4">
+              <input type="text" className="flex-1 h-auto py-3 px-4 justify-start text-left border-crust-200 focus:border-strawberry-400 bg-cream-50" placeholder="Enter your dietary restriction here" value={customInput} onChange={(e) => setCustomInput(e.target.value)} />
+              <Button onClick={addCustomRestriction} className="bg-strawberry-500 border-strawberry-200">Add Custom</Button>
+            </div>
+            <div className="mt-4">
+              {customRestrictions.map((restriction, index) => (
+                <div key={index} className="flex items-center h-auto py-3 px-4 justify-between mb-2 bg-cream-200 border-strawberry-200 p-2 rounded-md">
+                  <span>{restriction}</span>
+                  <Button variant="outline" onClick={() => removeCustomRestriction(restriction)}>Remove</Button>
+                </div>
               ))}
             </div>
           </CardContent>

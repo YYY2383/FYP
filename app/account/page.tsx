@@ -39,6 +39,7 @@ export default function Account() {
     email: "",
   })
   const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([])
+  const [customRestrictions, setCustomRestrictions] = useState<string[]>([])
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -78,6 +79,11 @@ export default function Account() {
           setDietaryRestrictions(data.dietaryRestrictions)
         } else {
           setDietaryRestrictions([])
+        }
+        if (Array.isArray(data.customRestrictions)) {
+          setCustomRestrictions(data.customRestrictions)
+        } else {
+          setCustomRestrictions([])
         }
       }
     } catch (error) {
@@ -319,12 +325,19 @@ export default function Account() {
                   <div className="mb-4">
                     <h3 className="text-sm font-medium text-crust-600 mb-2">Current preferences:</h3>
                     <div className="flex flex-wrap gap-2">
-                      {dietaryRestrictions.length > 0 ? (
-                        dietaryRestrictions.map((restriction) => (
-                          <div key={restriction} className="bg-cream-100 text-crust-600 px-3 py-1 rounded-full text-sm">
-                            {restriction}
-                          </div>
-                        ))
+                      {dietaryRestrictions.length > 0 || customRestrictions.length > 0 ? (
+                        <>
+                          {dietaryRestrictions.map((restriction) => (
+                            <div key={restriction} className="bg-cream-100 text-crust-600 px-3 py-1 rounded-full text-sm">
+                              {restriction}
+                            </div>
+                          ))}
+                          {customRestrictions.map((restriction) => (
+                            <div key={restriction} className="bg-cream-100 text-crust-600 px-3 py-1 rounded-full text-sm">
+                              {restriction}
+                            </div>
+                          ))}
+                        </>
                       ) : (
                         <p className="text-sm text-crust-400">No dietary preferences set</p>
                       )}

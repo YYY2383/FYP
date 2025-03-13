@@ -207,9 +207,11 @@ export default function RecipeDetails() {
         const userData = userDocSnap.data();
         console.log("User data:", userData);
         const dietaryRestrictions = userData.dietaryRestrictions || [];
+        const customRestrictions = userData.customRestrictions || [];
 
-        if (Array.isArray(dietaryRestrictions) && dietaryRestrictions.length > 0) {
-          const dietaryRestrictionsString = dietaryRestrictions.join(", ");
+        const allRestrictions = [...dietaryRestrictions, ...customRestrictions];
+        if (allRestrictions.length > 0) {
+          const dietaryRestrictionsString = allRestrictions.join(", ");
           setUserInput(dietaryRestrictionsString);
           handleFullRecipeAI();
         } else {

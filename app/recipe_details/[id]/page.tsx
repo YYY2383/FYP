@@ -159,7 +159,12 @@ export default function RecipeDetails() {
         steps: aiGeneratedRecipe.steps,
       })
 
-      setRecipe(aiGeneratedRecipe)
+      // Re-fetch the updated recipe data
+      const updatedDocSnap = await getDoc(recipeRef)
+      if (updatedDocSnap.exists()) {
+        setRecipe({ id: updatedDocSnap.id, userId: updatedDocSnap.data().userId, ...updatedDocSnap.data() })
+      }
+
       alert("Recipe replaced successfully!")
       setShowPopup(false)
       setHasGeneratedRecipe(false)

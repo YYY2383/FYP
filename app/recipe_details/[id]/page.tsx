@@ -362,6 +362,8 @@ export default function RecipeDetails() {
             <div className="mb-8">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold text-strawberry-600">Ingredients</h3>
+
+                {/* Button to activate the AI mode */}
                 <Button
                   variant={aiMode ? "default" : "outline"}
                   onClick={() => setAiMode(!aiMode)}
@@ -371,7 +373,8 @@ export default function RecipeDetails() {
                   {aiMode ? "Disable AI Mode" : "Enable AI Mode"}
                 </Button>
               </div>
-
+              
+              {/* If button is clicked, this pop up section is displayed */}
               {aiMode && (
                 <Card className="mb-4 border-strawberry-200 bg-white shadow-md">
                   <CardContent className="pt-6">
@@ -392,6 +395,8 @@ export default function RecipeDetails() {
                       >
                         {aiLoading ? "Generating..." : "Get AI Suggestions"}
                       </Button>
+
+                      {/* Button to insert the pre-entered dietary res in user's account */}
                       <Button
                         onClick={handleFetchDietaryRestrictions}
                         disabled={aiLoading}
@@ -464,6 +469,8 @@ export default function RecipeDetails() {
           </div>
         </div>
 
+        
+        {/* The structure of the pop up window that displays the genereated recipe */}
         <Dialog open={showPopup} onOpenChange={setShowPopup}>
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto border-strawberry-200">
             <DialogHeader className="bg-cream-50 -mx-6 -mt-6 p-6 border-b border-strawberry-100">

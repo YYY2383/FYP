@@ -104,7 +104,7 @@ export default function RecipesView() {
     setSearchQuery(e.target.value)
   }
 
-  // Filter recipes based on the search query
+  // function to filter recipes based on input 
   const filteredRecipes = recipes.filter((recipe) => recipe.name.toLowerCase().includes(searchQuery.toLowerCase()))
 
   return (
@@ -118,6 +118,8 @@ export default function RecipesView() {
           <div className="recipe-header mb-8">
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
               <div className="flex-1">
+
+                {/* section where user can paste in recipe url to fetch the recipe */}
                 <Input
                   placeholder="Paste recipe URL here"
                   value={recipeUrl}

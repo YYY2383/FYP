@@ -27,7 +27,7 @@ export async function POST(request) {
       - "prepTime": Preparation time
       - "cookTime": Cooking time
       - "servings": Number of servings
-      - "ingredients": A list of ingredients with correct measurements
+      - "ingredients": A list of ingredients with correct measurements that strictly adhere to the user's dietary restrictions
       - "steps": Step-by-step instructions.
       Original Recipe: ${JSON.stringify(recipe)}.
       Return only valid JSON.`;
